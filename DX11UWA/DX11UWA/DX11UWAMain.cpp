@@ -1,14 +1,14 @@
 ﻿#include "pch.h"
-#include "GraphicsProjectMain.h"
+#include "DX11UWAMain.h"
 #include "Common\DirectXHelper.h"
 
-using namespace GraphicsProject;
+using namespace DX11UWA;
 using namespace Windows::Foundation;
 using namespace Windows::System::Threading;
 using namespace Concurrency;
 
 // Loads and initializes application assets when the application is loaded.
-GraphicsProjectMain::GraphicsProjectMain(const std::shared_ptr<DX::DeviceResources>& deviceResources) :
+DX11UWAMain::DX11UWAMain(const std::shared_ptr<DX::DeviceResources>& deviceResources) :
 	m_deviceResources(deviceResources)
 {
 	// Register to be notified if the Device is lost or recreated
@@ -21,40 +21,41 @@ GraphicsProjectMain::GraphicsProjectMain(const std::shared_ptr<DX::DeviceResourc
 
 	// TODO: Change the timer settings if you want something other than the default variable timestep mode.
 	// e.g. for 60 FPS fixed timestep update logic, call:
-	/*
-	m_timer.SetFixedTimeStep(true);
-	m_timer.SetTargetElapsedSeconds(1.0 / 60);
-	*/
+	
+	//m_timer.SetFixedTimeStep(true);
+	//m_timer.SetTargetElapsedSeconds(1.0 / 60);
+	
 }
 
-GraphicsProjectMain::~GraphicsProjectMain()
+DX11UWAMain::~DX11UWAMain(void)
 {
 	// Deregister device notification
 	m_deviceResources->RegisterDeviceNotify(nullptr);
 }
 
 // Updates application state when the window size changes (e.g. device orientation change)
-void GraphicsProjectMain::CreateWindowSizeDependentResources() 
+void DX11UWAMain::CreateWindowSizeDependentResources(void)
 {
 	// TODO: Replace this with the size-dependent initialization of your app's content.
 	m_sceneRenderer->CreateWindowSizeDependentResources();
 }
 
 // Updates the application state once per frame.
-void GraphicsProjectMain::Update() 
+void DX11UWAMain::Update(void)
 {
 	// Update scene objects.
 	m_timer.Tick([&]()
 	{
 		// TODO: Replace this with your app's content update functions.
 		m_sceneRenderer->Update(m_timer);
+		m_sceneRenderer->SetInputDeviceData(main_kbuttons, main_currentpos);
 		m_fpsTextRenderer->Update(m_timer);
 	});
 }
 
 // Renders the current frame according to the current application state.
 // Returns true if the frame was rendered and is ready to be displayed.
-bool GraphicsProjectMain::Render() 
+bool DX11UWAMain::Render(void)
 {
 	// Don't try to render anything before the first Update.
 	if (m_timer.GetFrameCount() == 0)
@@ -85,16 +86,26 @@ bool GraphicsProjectMain::Render()
 }
 
 // Notifies renderers that device resources need to be released.
-void GraphicsProjectMain::OnDeviceLost()
+void DX11UWAMain::OnDeviceLost(void)
 {
 	m_sceneRenderer->ReleaseDeviceDependentResources();
 	m_fpsTextRenderer->ReleaseDeviceDependentResources();
 }
 
 // Notifies renderers that device resources may now be recreated.
-void GraphicsProjectMain::OnDeviceRestored()
+void DX11UWAMain::OnDeviceRestored(void)
 {
 	m_sceneRenderer->CreateDeviceDependentResources();
 	m_fpsTextRenderer->CreateDeviceDependentResources();
 	CreateWindowSizeDependentResources();
+}
+
+void DX11UWAMain::GetKeyboardButtons(const char* buttons)
+{
+	memcpy_s(main_kbuttons, sizeof(main_kbuttons), buttons, sizeof(main_kbuttons));
+}
+
+void DX11UWAMain::GetMousePos(const Windows::UI::Input::PointerPoint^ pos)
+{
+	main_currentpos = const_cast< Windows::UI::Input::PointerPoint^>(pos);
 }

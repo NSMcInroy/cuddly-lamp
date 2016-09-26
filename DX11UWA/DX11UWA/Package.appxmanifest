@@ -7,15 +7,15 @@
   IgnorableNamespaces="uap mp">
 
   <Identity
-    Name="ae696deb-b8c4-4501-af29-12e9d9138c3c"
-    Publisher="CN=iFakey"
+    Name="54014835-9bba-472b-bf12-b7d15c2fdce2"
+    Publisher="CN=Dan"
     Version="1.0.0.0" />
 
-  <mp:PhoneIdentity PhoneProductId="ae696deb-b8c4-4501-af29-12e9d9138c3c" PhonePublisherId="00000000-0000-0000-0000-000000000000"/>
+  <mp:PhoneIdentity PhoneProductId="54014835-9bba-472b-bf12-b7d15c2fdce2" PhonePublisherId="00000000-0000-0000-0000-000000000000"/>
 
   <Properties>
-    <DisplayName>GraphicsProject</DisplayName>
-    <PublisherDisplayName>iFakey</PublisherDisplayName>
+    <DisplayName>DX11UWA</DisplayName>
+    <PublisherDisplayName>Dan</PublisherDisplayName>
     <Logo>Assets\StoreLogo.png</Logo>
   </Properties>
 
@@ -30,12 +30,12 @@
   <Applications>
     <Application Id="App"
       Executable="$targetnametoken$.exe"
-      EntryPoint="GraphicsProject.App">
+      EntryPoint="DX11UWA.App">
       <uap:VisualElements
-        DisplayName="GraphicsProject"
+        DisplayName="DX11UWA"
         Square150x150Logo="Assets\Square150x150Logo.png"
         Square44x44Logo="Assets\Square44x44Logo.png"
-        Description="GraphicsProject"
+        Description="DX11UWA"
         BackgroundColor="transparent">
         <uap:DefaultTile Wide310x150Logo="Assets\Wide310x150Logo.png"/>
         <uap:SplashScreen Image="Assets\SplashScreen.png" />

@@ -3,7 +3,7 @@
 
 #include <ppltasks.h>
 
-using namespace GraphicsProject;
+using namespace DX11UWA;
 
 using namespace concurrency;
 using namespace Windows::ApplicationModel;
@@ -29,10 +29,12 @@ IFrameworkView^ Direct3DApplicationSource::CreateView()
 	return ref new App();
 }
 
-App::App() :
+App::App(void) :
 	m_windowClosed(false),
 	m_windowVisible(true)
 {
+	memset(kb_buttons, 0, sizeof(kb_buttons));
+	current_mpos = nullptr;
 }
 
 // The first method called when the IFrameworkView is being created.
@@ -77,6 +79,25 @@ void App::SetWindow(CoreWindow^ window)
 	DisplayInformation::DisplayContentsInvalidated +=
 		ref new TypedEventHandler<DisplayInformation^, Object^>(this, &App::OnDisplayContentsInvalidated);
 
+	window->KeyDown +=
+		ref new TypedEventHandler<CoreWindow^, KeyEventArgs^>(this, &App::OnButtonDown);
+
+	window->KeyUp +=
+		ref new TypedEventHandler<CoreWindow^, KeyEventArgs^>(this, &App::OnButtonUp);
+
+	window->PointerPressed +=
+		ref new TypedEventHandler<CoreWindow^, PointerEventArgs^>(this, &App::OnMouseButtonDown);
+
+	window->PointerReleased +=
+		ref new TypedEventHandler<CoreWindow^, PointerEventArgs^>(this, &App::OnMouseButtonUp);
+
+	window->PointerMoved +=
+		ref new TypedEventHandler<CoreWindow^, PointerEventArgs^>(this, &App::OnMouseMove);
+
+	window->PointerExited +=
+		ref new TypedEventHandler<CoreWindow^, PointerEventArgs^>(this, &App::OnMouseExit);
+
+
 	m_deviceResources->SetWindow(window);
 }
 
@@ -85,12 +106,12 @@ void App::Load(Platform::String^ entryPoint)
 {
 	if (m_main == nullptr)
 	{
-		m_main = std::unique_ptr<GraphicsProjectMain>(new GraphicsProjectMain(m_deviceResources));
+		m_main = std::unique_ptr<DX11UWAMain>(new DX11UWAMain(m_deviceResources));
 	}
 }
 
 // This method is called after the window becomes active.
-void App::Run()
+void App::Run(void)
 {
 	while (!m_windowClosed)
 	{
@@ -98,6 +119,8 @@ void App::Run()
 		{
 			CoreWindow::GetForCurrentThread()->Dispatcher->ProcessEvents(CoreProcessEventsOption::ProcessAllIfPresent);
 
+			m_main->GetKeyboardButtons(SendKeyboardButtons());
+			m_main->GetMousePos(SendMousePos());
 			m_main->Update();
 
 			if (m_main->Render())
@@ -115,7 +138,7 @@ void App::Run()
 // Required for IFrameworkView.
 // Terminate events do not cause Uninitialize to be called. It will be called if your IFrameworkView
 // class is torn down while the app is in the foreground.
-void App::Uninitialize()
+void App::Uninitialize(void)
 {
 }
 
@@ -193,4 +216,46 @@ void App::OnOrientationChanged(DisplayInformation^ sender, Object^ args)
 void App::OnDisplayContentsInvalidated(DisplayInformation^ sender, Object^ args)
 {
 	m_deviceResources->ValidateDevice();
+}
+
+void App::OnButtonUp(Windows::UI::Core::CoreWindow^ sender, Windows::UI::Core::KeyEventArgs^ args)
+{
+	kb_buttons[(UINT)args->VirtualKey] = false;
+}
+
+void App::OnButtonDown(Windows::UI::Core::CoreWindow^ sender, Windows::UI::Core::KeyEventArgs^ args)
+{
+	kb_buttons[(UINT)args->VirtualKey] = true;
+}
+
+void App::OnMouseButtonDown(Windows::UI::Core::CoreWindow^ sender, Windows::UI::Core::PointerEventArgs^ args)
+{
+	current_mpos = args->CurrentPoint;
+}
+
+void App::OnMouseButtonUp(Windows::UI::Core::CoreWindow^ sender, Windows::UI::Core::PointerEventArgs^ args)
+{
+	current_mpos = args->CurrentPoint;
+}
+
+void App::OnMouseMove(Windows::UI::Core::CoreWindow^ sender, Windows::UI::Core::PointerEventArgs^ args)
+{
+	current_mpos = args->CurrentPoint;
+}
+
+void App::OnMouseExit(Windows::UI::Core::CoreWindow^ sender, Windows::UI::Core::PointerEventArgs^ args)
+{
+	//throw ref new Platform::NotImplementedException();
+}
+
+char* App::SendKeyboardButtons(void)
+{
+	return kb_buttons;
+}
+
+Windows::UI::Input::PointerPoint^ App::SendMousePos(void)
+{
+	//throw ref new Platform::NotImplementedException();
+	// TODO: insert return statement here
+	return current_mpos;
 }

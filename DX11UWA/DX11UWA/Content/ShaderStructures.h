@@ -1,6 +1,6 @@
 ﻿#pragma once
 
-namespace GraphicsProject
+namespace DX11UWA
 {
 	// Constant buffer used to send MVP matrices to the vertex shader.
 	struct ModelViewProjectionConstantBuffer
@@ -15,5 +15,12 @@ namespace GraphicsProject
 	{
 		DirectX::XMFLOAT3 pos;
 		DirectX::XMFLOAT3 color;
+	};
+
+	struct VertexPositionUVNormal
+	{
+		DirectX::XMFLOAT3 pos;
+		DirectX::XMFLOAT3 uv;
+		DirectX::XMFLOAT3 normal;
 	};
 }
