@@ -119,6 +119,7 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="DX11UWA_TemporaryKey.pfx" />
+    <None Include="Assets\test pyramid.obj" />
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="Content\SamplePixelShader.hlsl">
@@ -135,7 +136,7 @@
     </FxCompile>
   </ItemGroup>
   <ItemGroup>
-    <Object Include="Assets\test pyramid.obj">
+    <Object Include="Assets\tentacleKnight.obj">
       <Filter>Assets</Filter>
     </Object>
   </ItemGroup>

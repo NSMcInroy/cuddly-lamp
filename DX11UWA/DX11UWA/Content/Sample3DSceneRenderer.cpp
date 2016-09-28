@@ -237,19 +237,47 @@ void Sample3DSceneRenderer::Render(void)
 	// Draw the objects.
 	context->DrawIndexed(m_indexCount, 0, 0);
 
+	m_scene.models[0].loationMatrix = XMMatrixTranspose(XMMatrixTranslation(1.0f, 0.5f, 0.0f));
+	m_scene.models[1].loationMatrix = XMMatrixTranspose(XMMatrixTranslation(-1.0f, 0.5f, 0.0f));
 
-	//pyramid
-	m_scene.models[0].m_constantBufferData = m_constantBufferData;
+	//draw all models in scene
+	for (unsigned int i = 0; i < m_scene.models.size(); ++i)
+	{
+		m_scene.models[i].m_constantBufferData = m_constantBufferData;
 
-	XMStoreFloat4x4(&m_scene.models[0].m_constantBufferData.model, XMMatrixTranspose(XMMatrixTranslation(0.0f, 3.0f, 0.0f)));
+		XMStoreFloat4x4(&m_scene.models[i].m_constantBufferData.model, m_scene.models[i].loationMatrix);
+		// Prepare the constant buffer to send it to the graphics device.
+		context->UpdateSubresource1(m_constantBuffer.Get(), 0, NULL, &m_scene.models[i].m_constantBufferData, 0, 0, 0);
+		// Each vertex is one instance of the VertexPositionColor struct.
+		stride = sizeof(VERTEX);
+		offset = 0;
+		context->IASetVertexBuffers(0, 1, m_scene.models[i].m_vertexBuffer.GetAddressOf(), &stride, &offset);
+		// Each index is one 16-bit unsigned integer (short).
+		context->IASetIndexBuffer(m_scene.models[i].m_indexBuffer.Get(), DXGI_FORMAT_R32_UINT, 0);
+		context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+		context->IASetInputLayout(m_scene.m_inputLayout.Get());
+		// Attach our vertex shader.
+		context->VSSetShader(m_scene.m_vertexShader.Get(), nullptr, 0);
+		// Send the constant buffer to the graphics device.
+		context->VSSetConstantBuffers1(0, 1, m_constantBuffer.GetAddressOf(), nullptr, nullptr);
+		// Attach our pixel shader.
+		context->PSSetShader(m_scene.m_pixelShader.Get(), nullptr, 0);
+		// Draw the objects.
+		context->DrawIndexed(m_scene.models[i].m_indexCount, 0, 0);
+	}
+	
+
+	m_scene.models[i].m_constantBufferData = m_constantBufferData;
+
+	XMStoreFloat4x4(&m_scene.models[i].m_constantBufferData.model, m_scene.models[i].loationMatrix);
 	// Prepare the constant buffer to send it to the graphics device.
-	context->UpdateSubresource1(m_constantBuffer.Get(), 0, NULL, &m_scene.models[0].m_constantBufferData, 0, 0, 0);
+	context->UpdateSubresource1(m_constantBuffer.Get(), 0, NULL, &m_scene.models[i].m_constantBufferData, 0, 0, 0);
 	// Each vertex is one instance of the VertexPositionColor struct.
 	stride = sizeof(VERTEX);
 	offset = 0;
-	context->IASetVertexBuffers(0, 1, m_scene.models[0].m_vertexBuffer.GetAddressOf(), &stride, &offset);
+	context->IASetVertexBuffers(0, 1, m_scene.models[i].m_vertexBuffer.GetAddressOf(), &stride, &offset);
 	// Each index is one 16-bit unsigned integer (short).
-	context->IASetIndexBuffer(m_scene.models[0].m_indexBuffer.Get(), DXGI_FORMAT_R32_UINT, 0);
+	context->IASetIndexBuffer(m_scene.models[i].m_indexBuffer.Get(), DXGI_FORMAT_R32_UINT, 0);
 	context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 	context->IASetInputLayout(m_scene.m_inputLayout.Get());
 	// Attach our vertex shader.
@@ -259,7 +287,26 @@ void Sample3DSceneRenderer::Render(void)
 	// Attach our pixel shader.
 	context->PSSetShader(m_scene.m_pixelShader.Get(), nullptr, 0);
 	// Draw the objects.
-	context->DrawIndexed(m_scene.models[0].m_indexCount, 0, 0);
+	context->DrawIndexed(m_scene.models[i].m_indexCount, 0, 0);
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
 
 }
 
@@ -365,7 +412,7 @@ void Sample3DSceneRenderer::CreateDeviceDependentResources(void)
 	auto loadModelPSTask = DX::ReadDataAsync(L"ModelPixelShader.cso");
 
 	// After the vertex shader file is loaded, create the shader and input layout.
-	auto createModelVSTask = loadModelVSTask.then([this](const std::vector<byte>& fileData)
+	auto createSceneVSTask = loadModelVSTask.then([this](const std::vector<byte>& fileData)
 	{
 		DX::ThrowIfFailed(m_deviceResources->GetD3DDevice()->CreateVertexShader(&fileData[0], fileData.size(), nullptr, &m_scene.m_vertexShader));
 
@@ -380,16 +427,13 @@ void Sample3DSceneRenderer::CreateDeviceDependentResources(void)
 	});
 
 	// After the pixel shader file is loaded, create the shader and constant buffer.
-	auto createModelPSTask = loadModelPSTask.then([this](const std::vector<byte>& fileData)
+	auto createScenePSTask = loadModelPSTask.then([this](const std::vector<byte>& fileData)
 	{
 		DX::ThrowIfFailed(m_deviceResources->GetD3DDevice()->CreatePixelShader(&fileData[0], fileData.size(), nullptr, &m_scene.m_pixelShader));
-
-		CD3D11_BUFFER_DESC constantBufferDesc(sizeof(ModelViewProjectionConstantBuffer), D3D11_BIND_CONSTANT_BUFFER);
-		DX::ThrowIfFailed(m_deviceResources->GetD3DDevice()->CreateBuffer(&constantBufferDesc, nullptr, &m_constantBuffer));
 	});
 
 	// Once both shaders are loaded, create the mesh.
-	auto createModelTask = (createModelPSTask && createModelVSTask).then([this]()
+	auto createPyramidTask = (createScenePSTask && createSceneVSTask).then([this]()
 	{
 		Model model;
 		if (model.loadOBJ("assets/test pyramid.obj"))
@@ -397,29 +441,63 @@ void Sample3DSceneRenderer::CreateDeviceDependentResources(void)
 			m_scene.models.push_back(model);
 
 			D3D11_SUBRESOURCE_DATA vertexBufferData = { 0 };
-			vertexBufferData.pSysMem = m_scene.models[0].vertices.data();
+			vertexBufferData.pSysMem = m_scene.models[m_scene.models.size() - 1].vertices.data();
 			vertexBufferData.SysMemPitch = 0;
 			vertexBufferData.SysMemSlicePitch = 0;
-			CD3D11_BUFFER_DESC vertexBufferDesc(sizeof(VERTEX) * m_scene.models[0].vertices.size(), D3D11_BIND_VERTEX_BUFFER);
-			DX::ThrowIfFailed(m_deviceResources->GetD3DDevice()->CreateBuffer(&vertexBufferDesc, &vertexBufferData, &m_scene.models[0].m_vertexBuffer));
+			CD3D11_BUFFER_DESC vertexBufferDesc(sizeof(VERTEX) * m_scene.models[m_scene.models.size() - 1].vertices.size(), D3D11_BIND_VERTEX_BUFFER);
+			DX::ThrowIfFailed(m_deviceResources->GetD3DDevice()->CreateBuffer(&vertexBufferDesc, &vertexBufferData, &m_scene.models[m_scene.models.size() - 1].m_vertexBuffer));
 
 
-			m_scene.models[0].m_indexCount = m_scene.models[0].indexVerts.size();
+			m_scene.models[m_scene.models.size() - 1].m_indexCount = m_scene.models[m_scene.models.size() - 1].indexVerts.size();
 
 			D3D11_SUBRESOURCE_DATA indexBufferData = { 0 };
-			indexBufferData.pSysMem = m_scene.models[0].indexVerts.data();
+			indexBufferData.pSysMem = m_scene.models[m_scene.models.size() - 1].indexVerts.data();
 			indexBufferData.SysMemPitch = 0;
 			indexBufferData.SysMemSlicePitch = 0;
-			CD3D11_BUFFER_DESC indexBufferDesc(sizeof(unsigned int) * m_scene.models[0].indexVerts.size(), D3D11_BIND_INDEX_BUFFER);
-			DX::ThrowIfFailed(m_deviceResources->GetD3DDevice()->CreateBuffer(&indexBufferDesc, &indexBufferData, &m_scene.models[0].m_indexBuffer));
+			CD3D11_BUFFER_DESC indexBufferDesc(sizeof(unsigned int) * m_scene.models[m_scene.models.size() - 1].indexVerts.size(), D3D11_BIND_INDEX_BUFFER);
+			DX::ThrowIfFailed(m_deviceResources->GetD3DDevice()->CreateBuffer(&indexBufferDesc, &indexBufferData, &m_scene.models[m_scene.models.size() - 1].m_indexBuffer));
 		}
 	});
 
 	// Once the cube is loaded, the object is ready to be rendered.
-	createModelTask.then([this]()
+	createPyramidTask.then([this]()
 	{
 		m_loadingComplete = true;
 	});
+
+	auto createKnightTask = (createScenePSTask && createSceneVSTask).then([this]()
+	{
+		Model model;
+		if (model.loadOBJ("assets/tentacleKnight.obj"))
+		{
+			m_scene.models.push_back(model);
+
+			D3D11_SUBRESOURCE_DATA vertexBufferData = { 0 };
+			vertexBufferData.pSysMem = m_scene.models[m_scene.models.size() - 1].vertices.data();
+			vertexBufferData.SysMemPitch = 0;
+			vertexBufferData.SysMemSlicePitch = 0;
+			CD3D11_BUFFER_DESC vertexBufferDesc(sizeof(VERTEX) * m_scene.models[m_scene.models.size() - 1].vertices.size(), D3D11_BIND_VERTEX_BUFFER);
+			DX::ThrowIfFailed(m_deviceResources->GetD3DDevice()->CreateBuffer(&vertexBufferDesc, &vertexBufferData, &m_scene.models[m_scene.models.size() - 1].m_vertexBuffer));
+
+
+			m_scene.models[m_scene.models.size() - 1].m_indexCount = m_scene.models[m_scene.models.size() - 1].indexVerts.size();
+
+			D3D11_SUBRESOURCE_DATA indexBufferData = { 0 };
+			indexBufferData.pSysMem = m_scene.models[m_scene.models.size() - 1].indexVerts.data();
+			indexBufferData.SysMemPitch = 0;
+			indexBufferData.SysMemSlicePitch = 0;
+			CD3D11_BUFFER_DESC indexBufferDesc(sizeof(unsigned int) * m_scene.models[m_scene.models.size() - 1].indexVerts.size(), D3D11_BIND_INDEX_BUFFER);
+			DX::ThrowIfFailed(m_deviceResources->GetD3DDevice()->CreateBuffer(&indexBufferDesc, &indexBufferData, &m_scene.models[m_scene.models.size() - 1].m_indexBuffer));
+		}
+	});
+
+	// Once the cube is loaded, the object is ready to be rendered.
+	createKnightTask.then([this]()
+	{
+		m_loadingComplete = true;
+	});
+
+
 }
 
 void Sample3DSceneRenderer::ReleaseDeviceDependentResources(void)
