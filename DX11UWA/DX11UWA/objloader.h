@@ -7,6 +7,9 @@ class Model
 {
 public:
 	vector<DX11UWA::VERTEX> vertices;
+	vector<unsigned int> indexVerts;
+	uint32	m_indexCount;
+
 	
 	Microsoft::WRL::ComPtr<ID3D11Buffer>		m_vertexBuffer;
 	Microsoft::WRL::ComPtr<ID3D11Buffer>		m_indexBuffer;

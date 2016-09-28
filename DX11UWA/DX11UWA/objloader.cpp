@@ -61,13 +61,33 @@ bool Model::loadOBJ(const char * path)
 
 	}
 
+
+	bool isUnique;
+	unsigned index;
 	for (unsigned int i = 0; i < vertexIndices.size(); i++)
 	{
+		isUnique = true;
 		DX11UWA::VERTEX vertex;
 		vertex.position = temp_positions[vertexIndices[i] - 1];
 		vertex.uv = temp_uvs[uvIndices[i] - 1];
 		vertex.normals = temp_normals[normalIndices[i] - 1];
-		vertices.push_back(vertex);
+
+		for (index = 0; index < vertices.size(); ++index)
+		{
+			if (vertex.normals.x == vertices[index].normals.x && vertex.normals.y == vertices[index].normals.y && vertex.normals.z == vertices[index].normals.z)// if the normals are ==
+				if (vertex.uv.x == vertices[index].uv.x && vertex.uv.y == vertices[index].uv.y)// if uv are equal
+					if (vertex.position.x == vertices[index].position.x && vertex.position.y == vertices[index].position.y && vertex.position.z == vertices[index].position.z)
+					{
+						isUnique = false;
+						indexVerts.push_back(index);
+						break;
+					}
+		}
+		if (isUnique)
+		{
+			indexVerts.push_back((unsigned int)vertices.size());
+			vertices.push_back(vertex);
+		}
 	}
 	return true;
 }

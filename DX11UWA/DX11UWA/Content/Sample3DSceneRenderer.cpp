@@ -237,6 +237,8 @@ void Sample3DSceneRenderer::Render(void)
 	// Draw the objects.
 	context->DrawIndexed(m_indexCount, 0, 0);
 
+
+	//pyramid
 	m_scene.models[0].m_constantBufferData = m_constantBufferData;
 
 	XMStoreFloat4x4(&m_scene.models[0].m_constantBufferData.model, XMMatrixTranspose(XMMatrixTranslation(0.0f, 3.0f, 0.0f)));
@@ -247,7 +249,7 @@ void Sample3DSceneRenderer::Render(void)
 	offset = 0;
 	context->IASetVertexBuffers(0, 1, m_scene.models[0].m_vertexBuffer.GetAddressOf(), &stride, &offset);
 	// Each index is one 16-bit unsigned integer (short).
-	context->IASetIndexBuffer(m_scene.models[0].m_indexBuffer.Get(), DXGI_FORMAT_R16_UINT, 0);
+	context->IASetIndexBuffer(m_scene.models[0].m_indexBuffer.Get(), DXGI_FORMAT_R32_UINT, 0);
 	context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 	context->IASetInputLayout(m_scene.m_inputLayout.Get());
 	// Attach our vertex shader.
@@ -257,7 +259,8 @@ void Sample3DSceneRenderer::Render(void)
 	// Attach our pixel shader.
 	context->PSSetShader(m_scene.m_pixelShader.Get(), nullptr, 0);
 	// Draw the objects.
-	context->Draw(m_scene.models[0].vertices.size(), 0);
+	context->DrawIndexed(m_scene.models[0].m_indexCount, 0, 0);
+
 }
 
 void Sample3DSceneRenderer::CreateDeviceDependentResources(void)
@@ -399,6 +402,16 @@ void Sample3DSceneRenderer::CreateDeviceDependentResources(void)
 			vertexBufferData.SysMemSlicePitch = 0;
 			CD3D11_BUFFER_DESC vertexBufferDesc(sizeof(VERTEX) * m_scene.models[0].vertices.size(), D3D11_BIND_VERTEX_BUFFER);
 			DX::ThrowIfFailed(m_deviceResources->GetD3DDevice()->CreateBuffer(&vertexBufferDesc, &vertexBufferData, &m_scene.models[0].m_vertexBuffer));
+
+
+			m_scene.models[0].m_indexCount = m_scene.models[0].indexVerts.size();
+
+			D3D11_SUBRESOURCE_DATA indexBufferData = { 0 };
+			indexBufferData.pSysMem = m_scene.models[0].indexVerts.data();
+			indexBufferData.SysMemPitch = 0;
+			indexBufferData.SysMemSlicePitch = 0;
+			CD3D11_BUFFER_DESC indexBufferDesc(sizeof(unsigned int) * m_scene.models[0].indexVerts.size(), D3D11_BIND_INDEX_BUFFER);
+			DX::ThrowIfFailed(m_deviceResources->GetD3DDevice()->CreateBuffer(&indexBufferDesc, &indexBufferData, &m_scene.models[0].m_indexBuffer));
 		}
 	});
 
