@@ -3,7 +3,7 @@
 #include "..\Common\DeviceResources.h"
 #include "ShaderStructures.h"
 #include "..\Common\StepTimer.h"
-
+#include "Scene.h"
 
 namespace DX11UWA
 {
@@ -60,6 +60,10 @@ namespace DX11UWA
 
 		// Matrix data member for the camera
 		DirectX::XMFLOAT4X4 m_camera;
+		Scene m_scene;
+
+
+
 	};
 }
 

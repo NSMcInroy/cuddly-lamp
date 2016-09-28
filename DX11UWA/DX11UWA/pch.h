@@ -13,3 +13,15 @@
 #include <memory>
 #include <agile.h>
 #include <concrt.h>
+
+//Nicholas McInroy
+#include <iostream>
+#include <vector>
+using namespace std;
+
+
+//#include <d3d11.h>
+//#include <atlbase.h>
+//#pragma comment(lib, "d3d11.lib")
+
+using namespace DirectX;

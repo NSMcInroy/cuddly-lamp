@@ -22,5 +22,12 @@ namespace DX11UWA
 		DirectX::XMFLOAT3 pos;
 		DirectX::XMFLOAT3 uv;
 		DirectX::XMFLOAT3 normal;
+	};	
+
+	struct VERTEX
+	{
+		DirectX::XMFLOAT3 position;
+		DirectX::XMFLOAT2 uv;
+		DirectX::XMFLOAT3 normals;
 	};
 }
