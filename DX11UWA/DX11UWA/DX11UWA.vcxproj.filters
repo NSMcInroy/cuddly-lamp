@@ -70,6 +70,9 @@
     <ClCompile Include="objloader.cpp">
       <Filter>Content\Source</Filter>
     </ClCompile>
+    <ClCompile Include="DDSTextureLoader.cpp">
+      <Filter>Content\Source</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Content\Sample3DSceneRenderer.h">
@@ -108,6 +111,9 @@
     <ClInclude Include="Scene.h">
       <Filter>Content\Headers</Filter>
     </ClInclude>
+    <ClInclude Include="DDSTextureLoader.h">
+      <Filter>Content\Headers</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Image Include="Assets\StoreLogo.png">
@@ -120,6 +126,7 @@
   <ItemGroup>
     <None Include="DX11UWA_TemporaryKey.pfx" />
     <None Include="Assets\test pyramid.obj" />
+    <None Include="Assets\tentacleKnight.obj" />
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="Content\SamplePixelShader.hlsl">
@@ -134,10 +141,5 @@
     <FxCompile Include="ModelPixelShader.hlsl">
       <Filter>Content\Shaders</Filter>
     </FxCompile>
-  </ItemGroup>
-  <ItemGroup>
-    <Object Include="Assets\tentacleKnight.obj">
-      <Filter>Assets</Filter>
-    </Object>
   </ItemGroup>
 </Project>

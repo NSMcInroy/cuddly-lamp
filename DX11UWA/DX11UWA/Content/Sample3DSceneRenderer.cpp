@@ -78,7 +78,7 @@ void Sample3DSceneRenderer::Update(DX::StepTimer const& timer)
 
 
 	// Update or move camera here
-	UpdateCamera(timer, 1.0f, 0.75f);
+	UpdateCamera(timer, 4.0f, 0.75f);
 
 }
 
@@ -237,8 +237,6 @@ void Sample3DSceneRenderer::Render(void)
 	// Draw the objects.
 	context->DrawIndexed(m_indexCount, 0, 0);
 
-	m_scene.models[0].loationMatrix = XMMatrixTranspose(XMMatrixTranslation(1.0f, 0.5f, 0.0f));
-	m_scene.models[1].loationMatrix = XMMatrixTranspose(XMMatrixTranslation(-1.0f, 0.5f, 0.0f));
 
 	//draw all models in scene
 	for (unsigned int i = 0; i < m_scene.models.size(); ++i)
@@ -267,44 +265,7 @@ void Sample3DSceneRenderer::Render(void)
 	}
 	
 
-	m_scene.models[i].m_constantBufferData = m_constantBufferData;
-
-	XMStoreFloat4x4(&m_scene.models[i].m_constantBufferData.model, m_scene.models[i].loationMatrix);
-	// Prepare the constant buffer to send it to the graphics device.
-	context->UpdateSubresource1(m_constantBuffer.Get(), 0, NULL, &m_scene.models[i].m_constantBufferData, 0, 0, 0);
-	// Each vertex is one instance of the VertexPositionColor struct.
-	stride = sizeof(VERTEX);
-	offset = 0;
-	context->IASetVertexBuffers(0, 1, m_scene.models[i].m_vertexBuffer.GetAddressOf(), &stride, &offset);
-	// Each index is one 16-bit unsigned integer (short).
-	context->IASetIndexBuffer(m_scene.models[i].m_indexBuffer.Get(), DXGI_FORMAT_R32_UINT, 0);
-	context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-	context->IASetInputLayout(m_scene.m_inputLayout.Get());
-	// Attach our vertex shader.
-	context->VSSetShader(m_scene.m_vertexShader.Get(), nullptr, 0);
-	// Send the constant buffer to the graphics device.
-	context->VSSetConstantBuffers1(0, 1, m_constantBuffer.GetAddressOf(), nullptr, nullptr);
-	// Attach our pixel shader.
-	context->PSSetShader(m_scene.m_pixelShader.Get(), nullptr, 0);
-	// Draw the objects.
-	context->DrawIndexed(m_scene.models[i].m_indexCount, 0, 0);
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
+	//context->PSSetShaderResources()
 	
 	
 
@@ -398,11 +359,7 @@ void Sample3DSceneRenderer::CreateDeviceDependentResources(void)
 		DX::ThrowIfFailed(m_deviceResources->GetD3DDevice()->CreateBuffer(&indexBufferDesc, &indexBufferData, &m_indexBuffer));
 	});
 
-	// Once the cube is loaded, the object is ready to be rendered.
-	createCubeTask.then([this]()
-	{
-		m_loadingComplete = true;
-	});
+
 
 
 
@@ -439,6 +396,7 @@ void Sample3DSceneRenderer::CreateDeviceDependentResources(void)
 		if (model.loadOBJ("assets/test pyramid.obj"))
 		{
 			m_scene.models.push_back(model);
+			m_scene.models[m_scene.models.size() - 1].loationMatrix = XMMatrixTranspose(XMMatrixTranslation(1.0f, 0.5f, 0.0f));
 
 			D3D11_SUBRESOURCE_DATA vertexBufferData = { 0 };
 			vertexBufferData.pSysMem = m_scene.models[m_scene.models.size() - 1].vertices.data();
@@ -460,10 +418,7 @@ void Sample3DSceneRenderer::CreateDeviceDependentResources(void)
 	});
 
 	// Once the cube is loaded, the object is ready to be rendered.
-	createPyramidTask.then([this]()
-	{
-		m_loadingComplete = true;
-	});
+
 
 	auto createKnightTask = (createScenePSTask && createSceneVSTask).then([this]()
 	{
@@ -471,6 +426,7 @@ void Sample3DSceneRenderer::CreateDeviceDependentResources(void)
 		if (model.loadOBJ("assets/tentacleKnight.obj"))
 		{
 			m_scene.models.push_back(model);
+			m_scene.models[m_scene.models.size() - 1].loationMatrix = XMMatrixTranspose(XMMatrixTranslation(-1.0f, 0.5f, 0.0f));
 
 			D3D11_SUBRESOURCE_DATA vertexBufferData = { 0 };
 			vertexBufferData.pSysMem = m_scene.models[m_scene.models.size() - 1].vertices.data();
@@ -492,7 +448,7 @@ void Sample3DSceneRenderer::CreateDeviceDependentResources(void)
 	});
 
 	// Once the cube is loaded, the object is ready to be rendered.
-	createKnightTask.then([this]()
+	(createCubeTask && createKnightTask && createPyramidTask).then([this]()
 	{
 		m_loadingComplete = true;
 	});

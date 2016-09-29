@@ -4,6 +4,7 @@
 #include "ShaderStructures.h"
 #include "..\Common\StepTimer.h"
 #include "Scene.h"
+#include "DDSTextureLoader.h"
 
 namespace DX11UWA
 {

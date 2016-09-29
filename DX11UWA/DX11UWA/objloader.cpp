@@ -92,6 +92,11 @@ bool Model::loadOBJ(const char * path)
 	return true;
 }
 
+bool Model::loadTexture(const char * path)
+{
+	return false;
+}
+
 void Model::Render()
 {
 }
