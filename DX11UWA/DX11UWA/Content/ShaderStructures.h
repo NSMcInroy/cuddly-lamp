@@ -30,4 +30,16 @@ namespace DX11UWA
 		DirectX::XMFLOAT2 uv;
 		DirectX::XMFLOAT3 normals;
 	};
+
+	struct DirectionConstantBuffer
+	{
+		DirectX::XMFLOAT4 dir;
+		DirectX::XMFLOAT4 color;
+	};
+
+	struct PointConstantBuffer
+	{
+		DirectX::XMFLOAT4 pos;
+		DirectX::XMFLOAT4 color;
+	};
 }

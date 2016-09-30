@@ -26,18 +26,21 @@ bool Model::loadOBJ(const char * path)
 		{
 			XMFLOAT3 positon;
 			fscanf_s(file, "%f %f %f\n", &positon.x, &positon.y, &positon.z);
+			positon.x = -positon.x;
 			temp_positions.push_back(positon);
 		}
 		else if (strcmp(lineHeader, "vt") == 0)
 		{
 			XMFLOAT2 uv;
 			fscanf_s(file, "%f %f\n", &uv.x, &uv.y);
+			uv.y = 1.0f - uv.y;
 			temp_uvs.push_back(uv);
 		}
 		else if (strcmp(lineHeader, "vn") == 0)
 		{
 			XMFLOAT3 normal;
 			fscanf_s(file, "%f %f %f\n", &normal.x, &normal.y, &normal.z);
+			normal.x = -normal.x;
 			temp_normals.push_back(normal);
 		}
 		else if (strcmp(lineHeader, "f") == 0)
@@ -49,14 +52,14 @@ bool Model::loadOBJ(const char * path)
 				return false;
 
 			vertexIndices.push_back(vertexIndex[0]);
-			vertexIndices.push_back(vertexIndex[1]);
 			vertexIndices.push_back(vertexIndex[2]);
+			vertexIndices.push_back(vertexIndex[1]);
 			uvIndices.push_back(uvIndex[0]);
-			uvIndices.push_back(uvIndex[1]);
 			uvIndices.push_back(uvIndex[2]);
+			uvIndices.push_back(uvIndex[1]);
 			normalIndices.push_back(normalIndex[0]);
-			normalIndices.push_back(normalIndex[1]);
 			normalIndices.push_back(normalIndex[2]);
+			normalIndices.push_back(normalIndex[1]);
 		}
 
 	}
@@ -92,9 +95,9 @@ bool Model::loadOBJ(const char * path)
 	return true;
 }
 
-bool Model::loadTexture(const char * path)
+HRESULT Model::loadTexture(const wchar_t * path, ID3D11Device* d3dDevice)
 {
-	return false;
+	return CreateDDSTextureFromFile(d3dDevice, path, NULL, srv.GetAddressOf());
 }
 
 void Model::Render()

@@ -78,7 +78,9 @@ void Sample3DSceneRenderer::Update(DX::StepTimer const& timer)
 
 
 	// Update or move camera here
-	UpdateCamera(timer, 4.0f, 0.75f);
+	UpdateCamera(timer, 4.0f, 1.75f);
+
+
 
 }
 
@@ -254,20 +256,28 @@ void Sample3DSceneRenderer::Render(void)
 		context->IASetIndexBuffer(m_scene.models[i].m_indexBuffer.Get(), DXGI_FORMAT_R32_UINT, 0);
 		context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 		context->IASetInputLayout(m_scene.m_inputLayout.Get());
+		context->PSSetShaderResources(0, 1, m_scene.models[i].srv.GetAddressOf());
 		// Attach our vertex shader.
 		context->VSSetShader(m_scene.m_vertexShader.Get(), nullptr, 0);
 		// Send the constant buffer to the graphics device.
 		context->VSSetConstantBuffers1(0, 1, m_constantBuffer.GetAddressOf(), nullptr, nullptr);
 		// Attach our pixel shader.
 		context->PSSetShader(m_scene.m_pixelShader.Get(), nullptr, 0);
+
+
+		//Lighting
+		// Prepare the constant buffer to send it to the graphics device.
+		context->UpdateSubresource1(m_dirConstantBuffer.Get(), 0, NULL, &m_dirConstantBufferData, 0, 0, 0);
+		// Each vertex is one instance of the VertexPositionColor struct.
+		context->PSSetConstantBuffers1(0, 1, m_dirConstantBuffer.GetAddressOf(), nullptr, nullptr);
+
 		// Draw the objects.
 		context->DrawIndexed(m_scene.models[i].m_indexCount, 0, 0);
 	}
-	
 
-	//context->PSSetShaderResources()
-	
-	
+
+
+
 
 }
 
@@ -387,16 +397,33 @@ void Sample3DSceneRenderer::CreateDeviceDependentResources(void)
 	auto createScenePSTask = loadModelPSTask.then([this](const std::vector<byte>& fileData)
 	{
 		DX::ThrowIfFailed(m_deviceResources->GetD3DDevice()->CreatePixelShader(&fileData[0], fileData.size(), nullptr, &m_scene.m_pixelShader));
+
+
+		
+	});
+
+	auto createLightsTask = createScenePSTask.then([this]()
+	{
+		CD3D11_BUFFER_DESC constantBufferDesc(sizeof(DirectionConstantBuffer), D3D11_BIND_CONSTANT_BUFFER);
+		DX::ThrowIfFailed(m_deviceResources->GetD3DDevice()->CreateBuffer(&constantBufferDesc, nullptr, &m_dirConstantBuffer));
+
+
+		//m_dirConstantBufferData.color = XMFLOAT4(1, 1, 1, 1);
+		m_dirConstantBufferData.color = XMFLOAT4(0.41f, 0.84f, 0.95f, 1);
+		m_dirConstantBufferData.dir = XMFLOAT4(1, -1, -1, 0);
 	});
 
 	// Once both shaders are loaded, create the mesh.
 	auto createPyramidTask = (createScenePSTask && createSceneVSTask).then([this]()
 	{
 		Model model;
-		if (model.loadOBJ("assets/test pyramid.obj"))
+		if (model.loadOBJ("assets/pirate.obj"))
 		{
+			HRESULT hs = model.loadTexture(L"assets/PirateTexture.dds", m_deviceResources->GetD3DDevice());
+			if (hs != S_OK)
+				model.srv = nullptr;
 			m_scene.models.push_back(model);
-			m_scene.models[m_scene.models.size() - 1].loationMatrix = XMMatrixTranspose(XMMatrixTranslation(1.0f, 0.5f, 0.0f));
+			m_scene.models[m_scene.models.size() - 1].loationMatrix = XMMatrixTranspose(XMMatrixMultiply(XMMatrixTranslation(-3.0f, 0.1f, -5.0f), XMMatrixRotationY(3.14159f)));
 
 			D3D11_SUBRESOURCE_DATA vertexBufferData = { 0 };
 			vertexBufferData.pSysMem = m_scene.models[m_scene.models.size() - 1].vertices.data();
@@ -418,15 +445,20 @@ void Sample3DSceneRenderer::CreateDeviceDependentResources(void)
 	});
 
 	// Once the cube is loaded, the object is ready to be rendered.
-
-
 	auto createKnightTask = (createScenePSTask && createSceneVSTask).then([this]()
 	{
 		Model model;
 		if (model.loadOBJ("assets/tentacleKnight.obj"))
 		{
+			HRESULT hs = model.loadTexture(L"assets/Diffuse_Knight_Uncleansed.dds", m_deviceResources->GetD3DDevice());
+			if (hs != S_OK)
+				model.srv = nullptr;
+
 			m_scene.models.push_back(model);
-			m_scene.models[m_scene.models.size() - 1].loationMatrix = XMMatrixTranspose(XMMatrixTranslation(-1.0f, 0.5f, 0.0f));
+			
+			
+			m_scene.models[m_scene.models.size() - 1].loationMatrix = XMMatrixTranspose(XMMatrixMultiply(XMMatrixTranslation(0.0f, 0.1f, -5.0f), XMMatrixRotationY(3.14159f)));
+		
 
 			D3D11_SUBRESOURCE_DATA vertexBufferData = { 0 };
 			vertexBufferData.pSysMem = m_scene.models[m_scene.models.size() - 1].vertices.data();
@@ -447,8 +479,9 @@ void Sample3DSceneRenderer::CreateDeviceDependentResources(void)
 		}
 	});
 
+	
 	// Once the cube is loaded, the object is ready to be rendered.
-	(createCubeTask && createKnightTask && createPyramidTask).then([this]()
+	(createCubeTask && createKnightTask && createPyramidTask && createLightsTask).then([this]()
 	{
 		m_loadingComplete = true;
 	});

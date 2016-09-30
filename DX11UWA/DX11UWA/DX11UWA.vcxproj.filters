@@ -119,6 +119,9 @@
     <Image Include="Assets\StoreLogo.png">
       <Filter>Assets</Filter>
     </Image>
+    <Image Include="Assets\PirateTexture.dds">
+      <Filter>Assets</Filter>
+    </Image>
   </ItemGroup>
   <ItemGroup>
     <AppxManifest Include="Package.appxmanifest" />
@@ -141,5 +144,13 @@
     <FxCompile Include="ModelPixelShader.hlsl">
       <Filter>Content\Shaders</Filter>
     </FxCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <Media Include="Assets\Diffuse_Knight_Uncleansed.dds" />
+  </ItemGroup>
+  <ItemGroup>
+    <Object Include="Assets\pirate.obj">
+      <Filter>Assets</Filter>
+    </Object>
   </ItemGroup>
 </Project>
