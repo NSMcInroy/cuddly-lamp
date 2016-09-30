@@ -88,7 +88,12 @@ void Sample3DSceneRenderer::Update(DX::StepTimer const& timer)
 void Sample3DSceneRenderer::Rotate(float radians)
 {
 	// Prepare to pass the updated model matrix to the shader
-	XMStoreFloat4x4(&m_constantBufferData.model, XMMatrixTranspose(XMMatrixRotationY(radians)));
+	XMStoreFloat4x4(&m_constantBufferData.model, XMMatrixTranspose(XMMatrixMultiply(XMMatrixTranslation(0, 1, 5), XMMatrixRotationY(radians))));
+	m_pointConstantBufferData.pos.x = m_constantBufferData.model._11;
+	m_pointConstantBufferData.pos.y = m_constantBufferData.model._22;
+	m_pointConstantBufferData.pos.z = m_constantBufferData.model._33;
+	m_pointConstantBufferData.pos.w = 1;
+	
 }
 
 void Sample3DSceneRenderer::UpdateCamera(DX::StepTimer const& timer, float const moveSpd, float const rotSpd)
@@ -266,10 +271,16 @@ void Sample3DSceneRenderer::Render(void)
 
 
 		//Lighting
+		//Directional
 		// Prepare the constant buffer to send it to the graphics device.
 		context->UpdateSubresource1(m_dirConstantBuffer.Get(), 0, NULL, &m_dirConstantBufferData, 0, 0, 0);
 		// Each vertex is one instance of the VertexPositionColor struct.
 		context->PSSetConstantBuffers1(0, 1, m_dirConstantBuffer.GetAddressOf(), nullptr, nullptr);
+
+		// Prepare the constant buffer to send it to the graphics device.
+		context->UpdateSubresource1(m_pointConstantBuffer.Get(), 0, NULL, &m_pointConstantBufferData, 0, 0, 0);
+		// Each vertex is one instance of the VertexPositionColor struct.
+		context->PSSetConstantBuffers1(1, 1, m_pointConstantBuffer.GetAddressOf(), nullptr, nullptr);
 
 		// Draw the objects.
 		context->DrawIndexed(m_scene.models[i].m_indexCount, 0, 0);
@@ -404,13 +415,25 @@ void Sample3DSceneRenderer::CreateDeviceDependentResources(void)
 
 	auto createLightsTask = createScenePSTask.then([this]()
 	{
-		CD3D11_BUFFER_DESC constantBufferDesc(sizeof(DirectionConstantBuffer), D3D11_BIND_CONSTANT_BUFFER);
-		DX::ThrowIfFailed(m_deviceResources->GetD3DDevice()->CreateBuffer(&constantBufferDesc, nullptr, &m_dirConstantBuffer));
+		CD3D11_BUFFER_DESC constantDirectionLightBufferDesc(sizeof(DirectionConstantBuffer), D3D11_BIND_CONSTANT_BUFFER);
+		DX::ThrowIfFailed(m_deviceResources->GetD3DDevice()->CreateBuffer(&constantDirectionLightBufferDesc, nullptr, &m_dirConstantBuffer));
 
 
 		//m_dirConstantBufferData.color = XMFLOAT4(1, 1, 1, 1);
-		m_dirConstantBufferData.color = XMFLOAT4(0.41f, 0.84f, 0.95f, 1);
+		m_dirConstantBufferData.color = XMFLOAT4(0.0001f, 0.25f, 0.6f, 1);
 		m_dirConstantBufferData.dir = XMFLOAT4(1, -1, -1, 0);
+
+
+		CD3D11_BUFFER_DESC constantPointLightBufferDesc(sizeof(PointConstantBuffer), D3D11_BIND_CONSTANT_BUFFER);
+		DX::ThrowIfFailed(m_deviceResources->GetD3DDevice()->CreateBuffer(&constantPointLightBufferDesc, nullptr, &m_pointConstantBuffer));
+
+
+		//m_dirConstantBufferData.color = XMFLOAT4(1, 1, 1, 1);
+		m_pointConstantBufferData.color = XMFLOAT4(1.0f, 1.0f, 0.0001f, 1);
+		m_pointConstantBufferData.pos = XMFLOAT4(2, 1, -5, 0);
+		
+
+
 	});
 
 	// Once both shaders are loaded, create the mesh.
@@ -423,7 +446,7 @@ void Sample3DSceneRenderer::CreateDeviceDependentResources(void)
 			if (hs != S_OK)
 				model.srv = nullptr;
 			m_scene.models.push_back(model);
-			m_scene.models[m_scene.models.size() - 1].loationMatrix = XMMatrixTranspose(XMMatrixMultiply(XMMatrixTranslation(-3.0f, 0.1f, -5.0f), XMMatrixRotationY(3.14159f)));
+			m_scene.models[m_scene.models.size() - 1].loationMatrix = XMMatrixTranspose(XMMatrixMultiply(XMMatrixRotationY(3.14159f), XMMatrixTranslation(0.0f, 0.05f, 0.0f)));
 
 			D3D11_SUBRESOURCE_DATA vertexBufferData = { 0 };
 			vertexBufferData.pSysMem = m_scene.models[m_scene.models.size() - 1].vertices.data();
@@ -448,16 +471,16 @@ void Sample3DSceneRenderer::CreateDeviceDependentResources(void)
 	auto createKnightTask = (createScenePSTask && createSceneVSTask).then([this]()
 	{
 		Model model;
-		if (model.loadOBJ("assets/tentacleKnight.obj"))
+		if (model.loadOBJ("assets/floor plane.obj"))
 		{
-			HRESULT hs = model.loadTexture(L"assets/Diffuse_Knight_Uncleansed.dds", m_deviceResources->GetD3DDevice());
+			HRESULT hs = model.loadTexture(L"assets/grassTexture.dds", m_deviceResources->GetD3DDevice());
 			if (hs != S_OK)
 				model.srv = nullptr;
 
 			m_scene.models.push_back(model);
 			
 			
-			m_scene.models[m_scene.models.size() - 1].loationMatrix = XMMatrixTranspose(XMMatrixMultiply(XMMatrixTranslation(0.0f, 0.1f, -5.0f), XMMatrixRotationY(3.14159f)));
+			m_scene.models[m_scene.models.size() - 1].loationMatrix = XMMatrixTranspose(XMMatrixMultiply(XMMatrixTranslation(0.0f, 0.0f, 0.0f), XMMatrixRotationY(3.14159f)));
 		
 
 			D3D11_SUBRESOURCE_DATA vertexBufferData = { 0 };

@@ -119,7 +119,10 @@
     <Image Include="Assets\StoreLogo.png">
       <Filter>Assets</Filter>
     </Image>
-    <Image Include="Assets\PirateTexture.dds">
+    <Image Include="Assets\woodfloor_seamless_bw.dds">
+      <Filter>Assets</Filter>
+    </Image>
+    <Image Include="Assets\grassTexture.dds">
       <Filter>Assets</Filter>
     </Image>
   </ItemGroup>
@@ -130,6 +133,7 @@
     <None Include="DX11UWA_TemporaryKey.pfx" />
     <None Include="Assets\test pyramid.obj" />
     <None Include="Assets\tentacleKnight.obj" />
+    <None Include="Assets\pirate.obj" />
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="Content\SamplePixelShader.hlsl">
@@ -147,9 +151,10 @@
   </ItemGroup>
   <ItemGroup>
     <Media Include="Assets\Diffuse_Knight_Uncleansed.dds" />
+    <Media Include="Assets\PirateTexture.dds" />
   </ItemGroup>
   <ItemGroup>
-    <Object Include="Assets\pirate.obj">
+    <Object Include="Assets\floor plane.obj">
       <Filter>Assets</Filter>
     </Object>
   </ItemGroup>

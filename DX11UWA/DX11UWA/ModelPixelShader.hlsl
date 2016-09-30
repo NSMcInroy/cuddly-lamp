@@ -13,6 +13,11 @@ cbuffer DirectionConstantBuffer : register(b0)
 	float4 dir_color;
 };
 
+cbuffer PointConstantBuffer : register(b1)
+{
+	float4 point_pos;
+	float4 point_color;
+};
 
 
 // Per-pixel color data passed through the pixel shader.
@@ -27,12 +32,23 @@ struct PixelShaderInput
 // A pass-through function for the (interpolated) color data.
 float4 main(PixelShaderInput input) : SV_TARGET
 {
-
-	float lightRatio = dot(-dir_direction.xyz, input.normals);
-//return float4(input.uv, 1.0f);
 float4 finalColor = baseTexture.Sample(filters[0], input.uv);// *modulate; // get base color
-finalColor.xyz = saturate(finalColor.xyz * dir_color.xyz * lightRatio);
-//float4 detailColor = detailTexture.Sample(filters[1], detailUV); // get detail effect
-//float4 finalColor = float4(lerp(baseColor.rgb, detailColor.rgb, detailColor.a), baseColor.a);
+
+	//directional light
+	float lightRatio = dot(-dir_direction.xyz, input.normals);
+float3 dirColor = dir_color.xyz * lightRatio;
+
+//point light
+float attenuation = 1.0f - saturate(length(point_pos.xyz - input.posw) / 3.0f);
+float3 pointDir = point_pos.xyz - input.posw;
+float pointRatio = saturate(dot(normalize(pointDir), input.normals));
+float3 pointColor = point_color.xyz * finalColor.xyz * pointRatio *attenuation;
+
+float3 lightsColor = saturate(dirColor + pointColor);
+
+
+finalColor.xyz = saturate(finalColor.xyz * lightsColor);
+
 return finalColor; // return a transition based on the detail alpha
+//return float4(input.uv, 1.0f);
 }
