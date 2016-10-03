@@ -1,7 +1,20 @@
 ﻿#include "pch.h"
 #include "Sample3DSceneRenderer.h"
 
+
 #include "..\Common\DirectXHelper.h"
+
+
+//#define DBOUT( s )            \
+//{                             \
+//   std::ostringstream os_;    \
+//   os_ << s;                   \
+//   OutputDebugStringA( os_.str().c_str() );  \
+//}
+//#include <Windows.h>
+//#include <iostream>
+//#include <sstream>
+
 
 using namespace DX11UWA;
 
@@ -77,6 +90,7 @@ void Sample3DSceneRenderer::Update(DX::StepTimer const& timer)
 	}
 
 
+
 	// Update or move camera here
 	UpdateCamera(timer, 4.0f, 1.75f);
 
@@ -89,11 +103,9 @@ void Sample3DSceneRenderer::Rotate(float radians)
 {
 	// Prepare to pass the updated model matrix to the shader
 	XMStoreFloat4x4(&m_constantBufferData.model, XMMatrixTranspose(XMMatrixMultiply(XMMatrixTranslation(0, 1, 5), XMMatrixRotationY(radians))));
-	m_pointConstantBufferData.pos.x = m_constantBufferData.model._11;
-	m_pointConstantBufferData.pos.y = m_constantBufferData.model._22;
-	m_pointConstantBufferData.pos.z = m_constantBufferData.model._33;
-	m_pointConstantBufferData.pos.w = 1;
-	
+
+
+
 }
 
 void Sample3DSceneRenderer::UpdateCamera(DX::StepTimer const& timer, float const moveSpd, float const rotSpd)
@@ -143,6 +155,31 @@ void Sample3DSceneRenderer::UpdateCamera(DX::StepTimer const& timer, float const
 		XMStoreFloat4x4(&m_camera, result);
 	}
 
+	if (m_kbuttons[VK_UP])
+	{
+		m_pointConstantBufferData.pos.z += 1 * delta_time;
+		//DBOUT("\nz: " << m_pointConstantBufferData.pos.z);
+	}
+	if (m_kbuttons[VK_DOWN])
+	{
+		m_pointConstantBufferData.pos.z -= 1 * delta_time;
+		//DBOUT("\nz: " << m_pointConstantBufferData.pos.z);
+
+
+	}
+	if (m_kbuttons[VK_RIGHT])
+	{
+		m_pointConstantBufferData.pos.x += 1 * delta_time;
+		//DBOUT("\nx: " << m_pointConstantBufferData.pos.x);
+
+
+	}
+	if (m_kbuttons[VK_LEFT])
+	{
+		m_pointConstantBufferData.pos.x -= 1 * delta_time;
+		//DBOUT("\nx: " << m_pointConstantBufferData.pos.x);
+
+	}
 	if (m_currMousePos)
 	{
 		if (m_currMousePos->Properties->IsRightButtonPressed && m_prevMousePos)
@@ -277,10 +314,13 @@ void Sample3DSceneRenderer::Render(void)
 		// Each vertex is one instance of the VertexPositionColor struct.
 		context->PSSetConstantBuffers1(0, 1, m_dirConstantBuffer.GetAddressOf(), nullptr, nullptr);
 
-		// Prepare the constant buffer to send it to the graphics device.
+		//point
 		context->UpdateSubresource1(m_pointConstantBuffer.Get(), 0, NULL, &m_pointConstantBufferData, 0, 0, 0);
-		// Each vertex is one instance of the VertexPositionColor struct.
 		context->PSSetConstantBuffers1(1, 1, m_pointConstantBuffer.GetAddressOf(), nullptr, nullptr);
+
+		//spot light
+		context->UpdateSubresource1(m_spotConstantBuffer.Get(), 0, NULL, &m_spotConstantBufferData, 0, 0, 0);
+		context->PSSetConstantBuffers1(2, 1, m_spotConstantBuffer.GetAddressOf(), nullptr, nullptr);
 
 		// Draw the objects.
 		context->DrawIndexed(m_scene.models[i].m_indexCount, 0, 0);
@@ -410,34 +450,41 @@ void Sample3DSceneRenderer::CreateDeviceDependentResources(void)
 		DX::ThrowIfFailed(m_deviceResources->GetD3DDevice()->CreatePixelShader(&fileData[0], fileData.size(), nullptr, &m_scene.m_pixelShader));
 
 
-		
+
 	});
 
 	auto createLightsTask = createScenePSTask.then([this]()
 	{
+		//dir
 		CD3D11_BUFFER_DESC constantDirectionLightBufferDesc(sizeof(DirectionConstantBuffer), D3D11_BIND_CONSTANT_BUFFER);
 		DX::ThrowIfFailed(m_deviceResources->GetD3DDevice()->CreateBuffer(&constantDirectionLightBufferDesc, nullptr, &m_dirConstantBuffer));
 
 
 		//m_dirConstantBufferData.color = XMFLOAT4(1, 1, 1, 1);
-		m_dirConstantBufferData.color = XMFLOAT4(0.0001f, 0.25f, 0.6f, 1);
-		m_dirConstantBufferData.dir = XMFLOAT4(1, -1, -1, 0);
+		m_dirConstantBufferData.color = XMFLOAT4(0.3f, 0.3f, 0.3f, 1);
+		m_dirConstantBufferData.dir = XMFLOAT4(1, -1, 1, 0);
 
-
+		//point
 		CD3D11_BUFFER_DESC constantPointLightBufferDesc(sizeof(PointConstantBuffer), D3D11_BIND_CONSTANT_BUFFER);
 		DX::ThrowIfFailed(m_deviceResources->GetD3DDevice()->CreateBuffer(&constantPointLightBufferDesc, nullptr, &m_pointConstantBuffer));
 
 
-		//m_dirConstantBufferData.color = XMFLOAT4(1, 1, 1, 1);
-		m_pointConstantBufferData.color = XMFLOAT4(1.0f, 1.0f, 0.0001f, 1);
-		m_pointConstantBufferData.pos = XMFLOAT4(2, 1, -5, 0);
-		
+		m_pointConstantBufferData.color = XMFLOAT4(1, 1,0.005, 1);
+		m_pointConstantBufferData.pos = XMFLOAT4(0, 1, -1, 0);
 
+		//spot
+		CD3D11_BUFFER_DESC constantSpotLightBufferDesc(sizeof(SpotConstantBuffer), D3D11_BIND_CONSTANT_BUFFER);
+		DX::ThrowIfFailed(m_deviceResources->GetD3DDevice()->CreateBuffer(&constantSpotLightBufferDesc, nullptr, &m_spotConstantBuffer));
+		 
 
+		m_spotConstantBufferData.color = XMFLOAT4(0.05, 0.05, 1, 1);
+		m_spotConstantBufferData.pos = XMFLOAT4(0, 3, 0, 1);
+		m_spotConstantBufferData.dir = XMFLOAT4(0, -1, 0, 0);
+		m_spotConstantBufferData.coneratio = XMFLOAT4(0.76, 0.76, 10, 1);
 	});
 
 	// Once both shaders are loaded, create the mesh.
-	auto createPyramidTask = (createScenePSTask && createSceneVSTask).then([this]()
+	auto createPirateTask = (createScenePSTask && createSceneVSTask).then([this]()
 	{
 		Model model;
 		if (model.loadOBJ("assets/pirate.obj"))
@@ -473,15 +520,15 @@ void Sample3DSceneRenderer::CreateDeviceDependentResources(void)
 		Model model;
 		if (model.loadOBJ("assets/floor plane.obj"))
 		{
-			HRESULT hs = model.loadTexture(L"assets/grassTexture.dds", m_deviceResources->GetD3DDevice());
+			HRESULT hs = model.loadTexture(L"assets/cobblestoneTexture.dds", m_deviceResources->GetD3DDevice());
 			if (hs != S_OK)
 				model.srv = nullptr;
 
 			m_scene.models.push_back(model);
-			
-			
+
+
 			m_scene.models[m_scene.models.size() - 1].loationMatrix = XMMatrixTranspose(XMMatrixMultiply(XMMatrixTranslation(0.0f, 0.0f, 0.0f), XMMatrixRotationY(3.14159f)));
-		
+
 
 			D3D11_SUBRESOURCE_DATA vertexBufferData = { 0 };
 			vertexBufferData.pSysMem = m_scene.models[m_scene.models.size() - 1].vertices.data();
@@ -502,9 +549,9 @@ void Sample3DSceneRenderer::CreateDeviceDependentResources(void)
 		}
 	});
 
-	
+
 	// Once the cube is loaded, the object is ready to be rendered.
-	(createCubeTask && createKnightTask && createPyramidTask && createLightsTask).then([this]()
+	(createCubeTask && createKnightTask && createPirateTask && createLightsTask).then([this]()
 	{
 		m_loadingComplete = true;
 	});

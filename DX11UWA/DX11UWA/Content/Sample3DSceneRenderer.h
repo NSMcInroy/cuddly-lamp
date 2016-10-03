@@ -46,11 +46,13 @@ namespace DX11UWA
 
 		Microsoft::WRL::ComPtr<ID3D11Buffer>		m_dirConstantBuffer;
 		Microsoft::WRL::ComPtr<ID3D11Buffer>		m_pointConstantBuffer;
+		Microsoft::WRL::ComPtr<ID3D11Buffer>		m_spotConstantBuffer;
 
 		// System resources for cube geometry.
 		ModelViewProjectionConstantBuffer	m_constantBufferData;
 		DirectionConstantBuffer				m_dirConstantBufferData;
 		PointConstantBuffer					m_pointConstantBufferData;
+		SpotConstantBuffer					m_spotConstantBufferData;
 		uint32	m_indexCount;
 
 		// Variables used with the rendering loop.

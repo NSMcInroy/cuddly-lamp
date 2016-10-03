@@ -42,4 +42,12 @@ namespace DX11UWA
 		DirectX::XMFLOAT4 pos;
 		DirectX::XMFLOAT4 color;
 	};
+
+	struct SpotConstantBuffer
+	{
+		DirectX::XMFLOAT4 pos;
+		DirectX::XMFLOAT4 color;
+		DirectX::XMFLOAT4 dir;
+		DirectX::XMFLOAT4 coneratio;
+	};
 }
