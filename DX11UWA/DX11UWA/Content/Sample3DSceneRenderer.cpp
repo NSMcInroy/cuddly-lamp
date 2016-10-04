@@ -299,6 +299,7 @@ void Sample3DSceneRenderer::Render(void)
 		context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 		context->IASetInputLayout(m_scene.m_inputLayout.Get());
 		context->PSSetShaderResources(0, 1, m_scene.models[i].srv.GetAddressOf());
+		context->PSSetShaderResources(1, 1, m_scene.models[i].normalsrv.GetAddressOf());
 		// Attach our vertex shader.
 		context->VSSetShader(m_scene.m_vertexShader.Get(), nullptr, 0);
 		// Send the constant buffer to the graphics device.
@@ -438,7 +439,10 @@ void Sample3DSceneRenderer::CreateDeviceDependentResources(void)
 		{
 			{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
 			{ "UV", 0, DXGI_FORMAT_R32G32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-			{ "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 }
+			{ "NORMALMAP", 0, DXGI_FORMAT_R32G32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+			{ "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+			{ "TANGENT", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+			{ "BINORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 }
 		};
 
 		DX::ThrowIfFailed(m_deviceResources->GetD3DDevice()->CreateInputLayout(vertexDesc, ARRAYSIZE(vertexDesc), &fileData[0], fileData.size(), &m_scene.m_inputLayout));
@@ -469,13 +473,13 @@ void Sample3DSceneRenderer::CreateDeviceDependentResources(void)
 		DX::ThrowIfFailed(m_deviceResources->GetD3DDevice()->CreateBuffer(&constantPointLightBufferDesc, nullptr, &m_pointConstantBuffer));
 
 
-		m_pointConstantBufferData.color = XMFLOAT4(1, 1,0.005, 1);
+		m_pointConstantBufferData.color = XMFLOAT4(1, 1, 0.005, 1);
 		m_pointConstantBufferData.pos = XMFLOAT4(0, 1, -1, 0);
 
 		//spot
 		CD3D11_BUFFER_DESC constantSpotLightBufferDesc(sizeof(SpotConstantBuffer), D3D11_BIND_CONSTANT_BUFFER);
 		DX::ThrowIfFailed(m_deviceResources->GetD3DDevice()->CreateBuffer(&constantSpotLightBufferDesc, nullptr, &m_spotConstantBuffer));
-		 
+
 
 		m_spotConstantBufferData.color = XMFLOAT4(0.05, 0.05, 1, 1);
 		m_spotConstantBufferData.pos = XMFLOAT4(0, 3, 0, 1);
@@ -492,6 +496,14 @@ void Sample3DSceneRenderer::CreateDeviceDependentResources(void)
 			HRESULT hs = model.loadTexture(L"assets/PirateTexture.dds", m_deviceResources->GetD3DDevice());
 			if (hs != S_OK)
 				model.srv = nullptr;
+			
+			model.normalsrv = nullptr;
+
+			if (!model.normalsrv)
+				for (unsigned int i = 0; i < model.vertices.size(); ++i)
+					model.vertices[i].tangent.x = 50;
+
+
 			m_scene.models.push_back(model);
 			m_scene.models[m_scene.models.size() - 1].loationMatrix = XMMatrixTranspose(XMMatrixMultiply(XMMatrixRotationY(3.14159f), XMMatrixTranslation(0.0f, 0.05f, 0.0f)));
 
@@ -524,9 +536,15 @@ void Sample3DSceneRenderer::CreateDeviceDependentResources(void)
 			if (hs != S_OK)
 				model.srv = nullptr;
 
+			hs = model.loadNormal(L"assets/cobblestoneNormal.dds", m_deviceResources->GetD3DDevice());
+			if (hs != S_OK)
+				model.normalsrv = nullptr;
+			else
+				for (unsigned int i = 0; i < model.vertices.size(); ++i)
+					model.vertices[i].normalmap.x = 1.0f;
+
+
 			m_scene.models.push_back(model);
-
-
 			m_scene.models[m_scene.models.size() - 1].loationMatrix = XMMatrixTranspose(XMMatrixMultiply(XMMatrixTranslation(0.0f, 0.0f, 0.0f), XMMatrixRotationY(3.14159f)));
 
 

@@ -28,7 +28,10 @@ namespace DX11UWA
 	{
 		DirectX::XMFLOAT3 position;
 		DirectX::XMFLOAT2 uv;
+		DirectX::XMFLOAT2 normalmap;
 		DirectX::XMFLOAT3 normals;
+		DirectX::XMFLOAT3 tangent;
+		DirectX::XMFLOAT3 binormals;
 	};
 
 	struct DirectionConstantBuffer

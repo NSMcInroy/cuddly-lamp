@@ -13,6 +13,7 @@ public:
 	uint32	m_indexCount;
 	XMMATRIX loationMatrix;
 	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>	srv;
+	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>	normalsrv;
 	Microsoft::WRL::ComPtr<ID3D11Buffer>				m_vertexBuffer;
 	Microsoft::WRL::ComPtr<ID3D11Buffer>				m_indexBuffer;
 	DX11UWA::ModelViewProjectionConstantBuffer			m_constantBufferData;
@@ -20,6 +21,7 @@ public:
 	//render function
 	bool loadOBJ(const char * path);
 	HRESULT loadTexture(const wchar_t * path, ID3D11Device* d3dDevice);
+	HRESULT loadNormal(const wchar_t * path, ID3D11Device * d3dDevice);
 	void Render();
 
 };

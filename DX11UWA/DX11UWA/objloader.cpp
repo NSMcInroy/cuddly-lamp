@@ -45,7 +45,7 @@ bool Model::loadOBJ(const char * path)
 		}
 		else if (strcmp(lineHeader, "f") == 0)
 		{
-			//string vertex1, vertex2, vertex3;
+			//string vertices[i], vertices[i+1], vertices[i+2];
 			unsigned int vertexIndex[3], uvIndex[3], normalIndex[3];
 			int numMatches = fscanf_s(file, "%d/%d/%d %d/%d/%d %d/%d/%d\n", &vertexIndex[0], &uvIndex[0], &normalIndex[0], &vertexIndex[1], &uvIndex[1], &normalIndex[1], &vertexIndex[2], &uvIndex[2], &normalIndex[2]);
 			if (numMatches != 9)
@@ -88,9 +88,73 @@ bool Model::loadOBJ(const char * path)
 		}
 		if (isUnique)
 		{
+			vertex.normalmap.x = 0.0f;
 			indexVerts.push_back((unsigned int)vertices.size());
 			vertices.push_back(vertex);
 		}
+	}
+
+	for (unsigned int i = 0; i < indexVerts .size(); i += 3)
+	{
+		float vector1[3], vector2[3];
+		float uVector[2], vVector[2];
+		XMFLOAT3 tangent;
+		XMFLOAT3 binormal;
+
+		// Calculate the two vectors for this face.
+		vector1[0] = vertices[indexVerts[i+ 1]].position.x - vertices[indexVerts[i]].position.x;
+		vector1[1] = vertices[indexVerts[i+ 1]].position.y - vertices[indexVerts[i]].position.y;
+		vector1[2] = vertices[indexVerts[i+ 1]].position.z - vertices[indexVerts[i]].position.z;
+
+		vector2[0] = vertices[indexVerts[i+ 2]].position.x - vertices[indexVerts[i]].position.x;
+		vector2[1] = vertices[indexVerts[i+ 2]].position.y - vertices[indexVerts[i]].position.y;
+		vector2[2] = vertices[indexVerts[i+ 2]].position.z - vertices[indexVerts[i]].position.z;
+
+		// Calculate the tu and tv texture space vectors.
+		uVector[0] = vertices[indexVerts[i + 1]].uv.x - vertices[indexVerts[i]].uv.x;
+		vVector[0] = vertices[indexVerts[i + 1]].uv.y - vertices[indexVerts[i]].uv.y;
+
+		uVector[1] = vertices[indexVerts[i + 2]].uv.x - vertices[indexVerts[i]].uv.x;
+		vVector[1] = vertices[indexVerts[i + 2]].uv.y - vertices[indexVerts[i]].uv.y;
+
+		// Calculate the denominator of the tangent/binormal equation.
+		float invDenominator = 1.0f / (uVector[0] * vVector[1] - uVector[1] * vVector[0]);
+
+		// Calculate the cross products and multiply by the coefficient to get the tangent and binormal.
+		tangent.x = (vVector[1] * vector1[0] - vVector[0] * vector2[0]) * invDenominator;
+		tangent.y = (vVector[1] * vector1[1] - vVector[0] * vector2[1]) * invDenominator;
+		tangent.z = (vVector[1] * vector1[2] - vVector[0] * vector2[2]) * invDenominator;
+
+		binormal.x = (uVector[0] * vector2[0] - uVector[1] * vector1[0]) * invDenominator;
+		binormal.y = (uVector[0] * vector2[1] - uVector[1] * vector1[1]) * invDenominator;
+		binormal.z = (uVector[0] * vector2[2] - uVector[1] * vector1[2]) * invDenominator;
+
+		// Calculate the length of this normal.
+		float length = sqrt((tangent.x * tangent.x) + (tangent.y * tangent.y) + (tangent.z * tangent.z));
+
+		// Normalize the normal and then store it
+		tangent.x = tangent.x / length;
+		tangent.y = tangent.y / length;
+		tangent.z = tangent.z / length;
+
+		// Calculate the length of this normal.
+		length = sqrt((binormal.x * binormal.x) + (binormal.y * binormal.y) + (binormal.z * binormal.z));
+
+		// Normalize the normal and then store it
+		binormal.x = binormal.x / length;
+		binormal.y = binormal.y / length;
+		binormal.z = binormal.z / length;
+
+		//set the 3 vertices to the tangent and the binormals
+
+		vertices[indexVerts[i]].tangent = tangent;
+		vertices[indexVerts[i]].binormals = binormal;
+		vertices[indexVerts[i+ 1]].tangent = tangent;
+		vertices[indexVerts[i+ 1]].binormals = binormal;
+		vertices[indexVerts[i+ 2]].tangent = tangent;
+		vertices[indexVerts[i+ 2]].binormals = binormal;
+
+
 	}
 	return true;
 }
@@ -98,6 +162,10 @@ bool Model::loadOBJ(const char * path)
 HRESULT Model::loadTexture(const wchar_t * path, ID3D11Device* d3dDevice)
 {
 	return CreateDDSTextureFromFile(d3dDevice, path, NULL, srv.GetAddressOf());
+}
+HRESULT Model::loadNormal(const wchar_t * path, ID3D11Device* d3dDevice)
+{
+	return CreateDDSTextureFromFile(d3dDevice, path, NULL, normalsrv.GetAddressOf());
 }
 
 void Model::Render()
