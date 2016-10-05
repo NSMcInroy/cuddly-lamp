@@ -56,7 +56,7 @@ PixelShaderInput main(VertexShaderInput input)
 	output.binormal = mul(input.binormal, model);
 	output.binormal = normalize(output.binormal);
 
-	output.normalmap = input.normalmap.x;
+	output.normalmap = input.normalmap.x; 
 
 
 	return output;

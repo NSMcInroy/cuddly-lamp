@@ -75,9 +75,10 @@ float3 spotlightColor = spotFactor * spotlightRatio * spot_color.xyz * spotAtten
 
 
 float3 lightsColor = saturate( pointColor + spotlightColor + dirColor);
+float3 ambient = { 0.1,0.1,0.1 };
+lightsColor = saturate(lightsColor + ambient);
 
-
-finalColor.xyz = saturate(finalColor.xyz * lightsColor);
+finalColor.xyz = saturate(finalColor.xyz * lightsColor );
 
 return finalColor; // return a transition based on the detail alpha
 //return float4(input.uv, 1.0f);

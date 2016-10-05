@@ -496,12 +496,13 @@ void Sample3DSceneRenderer::CreateDeviceDependentResources(void)
 			HRESULT hs = model.loadTexture(L"assets/PirateTexture.dds", m_deviceResources->GetD3DDevice());
 			if (hs != S_OK)
 				model.srv = nullptr;
-			
-			model.normalsrv = nullptr;
-
-			if (!model.normalsrv)
+			hs = model.loadNormal(L"assets/PirateNormal.dds", m_deviceResources->GetD3DDevice());
+			if (hs != S_OK)
+				model.normalsrv = nullptr;
+			else
 				for (unsigned int i = 0; i < model.vertices.size(); ++i)
-					model.vertices[i].tangent.x = 50;
+					model.vertices[i].normalmap.x = 1.0f;
+
 
 
 			m_scene.models.push_back(model);
