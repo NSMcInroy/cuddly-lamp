@@ -61,9 +61,6 @@
     <ClCompile Include="pch.cpp">
       <Filter>Content\Source</Filter>
     </ClCompile>
-    <ClCompile Include="Common\DDSTextureLoader.cpp">
-      <Filter>Common\Source</Filter>
-    </ClCompile>
     <ClCompile Include="Common\DeviceResources.cpp">
       <Filter>Common\Source</Filter>
     </ClCompile>
@@ -93,9 +90,6 @@
     <ClInclude Include="pch.h">
       <Filter>Content\Headers</Filter>
     </ClInclude>
-    <ClInclude Include="Common\DDSTextureLoader.h">
-      <Filter>Common\Headers</Filter>
-    </ClInclude>
     <ClInclude Include="Common\DeviceResources.h">
       <Filter>Common\Headers</Filter>
     </ClInclude>
@@ -117,9 +111,6 @@
   </ItemGroup>
   <ItemGroup>
     <Image Include="Assets\StoreLogo.png">
-      <Filter>Assets</Filter>
-    </Image>
-    <Image Include="Assets\PirateNormal.dds">
       <Filter>Assets</Filter>
     </Image>
   </ItemGroup>
@@ -154,5 +145,6 @@
     <Media Include="Assets\grassTexture.dds" />
     <Media Include="Assets\cobblestoneTexture.dds" />
     <Media Include="Assets\cobblestoneNormal.dds" />
+    <Media Include="Assets\PirateNormal.dds" />
   </ItemGroup>
 </Project>
