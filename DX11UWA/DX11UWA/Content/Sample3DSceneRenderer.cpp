@@ -94,7 +94,11 @@ void Sample3DSceneRenderer::Update(DX::StepTimer const& timer)
 	// Update or move camera here
 	UpdateCamera(timer, 4.0f, 1.75f);
 
+	m_pointConstantBufferData.pos.x = m_constantBufferData.model._14;
+	m_pointConstantBufferData.pos.y = m_constantBufferData.model._24;
+	m_pointConstantBufferData.pos.z = m_constantBufferData.model._34;
 
+	
 
 }
 
@@ -103,7 +107,6 @@ void Sample3DSceneRenderer::Rotate(float radians)
 {
 	// Prepare to pass the updated model matrix to the shader
 	XMStoreFloat4x4(&m_constantBufferData.model, XMMatrixTranspose(XMMatrixMultiply(XMMatrixTranslation(0, 1, 5), XMMatrixRotationY(radians))));
-
 
 
 }
@@ -177,9 +180,13 @@ void Sample3DSceneRenderer::UpdateCamera(DX::StepTimer const& timer, float const
 	if (m_kbuttons[VK_LEFT])
 	{
 		m_pointConstantBufferData.pos.x -= 1 * delta_time;
+		m_pointConstantBufferData.pos.x = m_constantBufferData.model._41;
 		//DBOUT("\nx: " << m_pointConstantBufferData.pos.x);
 
 	}
+
+
+
 	if (m_currMousePos)
 	{
 		if (m_currMousePos->Properties->IsRightButtonPressed && m_prevMousePos)
@@ -209,7 +216,10 @@ void Sample3DSceneRenderer::UpdateCamera(DX::StepTimer const& timer, float const
 		m_prevMousePos = m_currMousePos;
 	}
 
+	m_constantBufferData.camerapos = XMFLOAT4(m_camera._41, m_camera._42, m_camera._43, m_camera._44);
 
+	//m_spotConstantBufferData.pos = XMFLOAT4(m_camera._41, m_camera._42, m_camera._43, m_camera._44);
+	//m_spotConstantBufferData.dir = XMFLOAT4(m_camera._31, m_camera._32, m_camera._33, m_camera._34);
 }
 
 void Sample3DSceneRenderer::SetKeyboardButtons(const char* list)
@@ -452,9 +462,6 @@ void Sample3DSceneRenderer::CreateDeviceDependentResources(void)
 	auto createScenePSTask = loadModelPSTask.then([this](const std::vector<byte>& fileData)
 	{
 		DX::ThrowIfFailed(m_deviceResources->GetD3DDevice()->CreatePixelShader(&fileData[0], fileData.size(), nullptr, &m_scene.m_pixelShader));
-
-
-
 	});
 
 	auto createLightsTask = createScenePSTask.then([this]()
@@ -484,19 +491,19 @@ void Sample3DSceneRenderer::CreateDeviceDependentResources(void)
 		m_spotConstantBufferData.color = XMFLOAT4(0.05, 0.05, 1, 1);
 		m_spotConstantBufferData.pos = XMFLOAT4(0, 3, 0, 1);
 		m_spotConstantBufferData.dir = XMFLOAT4(0, -1, 0, 0);
-		m_spotConstantBufferData.coneratio = XMFLOAT4(0.76, 0.76, 10, 1);
+		m_spotConstantBufferData.coneratio = XMFLOAT4(0.8, 0.7, 10, 1);
 	});
 
 	// Once both shaders are loaded, create the mesh.
-	auto createPirateTask = (createScenePSTask && createSceneVSTask).then([this]()
+	auto createTreeTask = (createScenePSTask && createSceneVSTask).then([this]()
 	{
 		Model model;
-		if (model.loadOBJ("assets/pirate.obj"))
+		if (model.loadOBJ("assets/WillowTree.obj"))
 		{
-			HRESULT hs = model.loadTexture(L"assets/PirateTexture.dds", m_deviceResources->GetD3DDevice());
+			HRESULT hs = model.loadTexture(L"assets/WillowTexture.dds", m_deviceResources->GetD3DDevice());
 			if (hs != S_OK)
 				model.srv = nullptr;
-			hs = model.loadNormal(L"assets/PirateNormal.dds", m_deviceResources->GetD3DDevice());
+			hs = model.loadNormal(L"assets/WillowNormal.dds", m_deviceResources->GetD3DDevice());
 			if (hs != S_OK)
 				model.normalsrv = nullptr;
 			else
@@ -528,16 +535,16 @@ void Sample3DSceneRenderer::CreateDeviceDependentResources(void)
 	});
 
 	// Once the cube is loaded, the object is ready to be rendered.
-	auto createKnightTask = (createScenePSTask && createSceneVSTask).then([this]()
+	auto createFloorTask = (createScenePSTask && createSceneVSTask).then([this]()
 	{
 		Model model;
 		if (model.loadOBJ("assets/floor plane.obj"))
 		{
-			HRESULT hs = model.loadTexture(L"assets/cobblestoneTexture.dds", m_deviceResources->GetD3DDevice());
+			HRESULT hs = model.loadTexture(L"assets/TileTexture.dds", m_deviceResources->GetD3DDevice());
 			if (hs != S_OK)
 				model.srv = nullptr;
 
-			hs = model.loadNormal(L"assets/cobblestoneNormal.dds", m_deviceResources->GetD3DDevice());
+			hs = model.loadNormal(L"assets/TileNormal.dds", m_deviceResources->GetD3DDevice());
 			if (hs != S_OK)
 				model.normalsrv = nullptr;
 			else
@@ -570,7 +577,7 @@ void Sample3DSceneRenderer::CreateDeviceDependentResources(void)
 
 
 	// Once the cube is loaded, the object is ready to be rendered.
-	(createCubeTask && createKnightTask && createPirateTask && createLightsTask).then([this]()
+	(createCubeTask && createFloorTask && createTreeTask && createLightsTask).then([this]()
 	{
 		m_loadingComplete = true;
 	});

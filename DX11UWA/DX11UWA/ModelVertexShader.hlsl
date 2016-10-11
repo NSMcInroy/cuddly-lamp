@@ -4,6 +4,7 @@ cbuffer ModelViewProjectionConstantBuffer : register(b0)
 	matrix model;
 	matrix view;
 	matrix projection;
+	float4 camerapos;
 };
 
 // Per-vertex data used as input to the vertex shader.
@@ -27,6 +28,7 @@ struct PixelShaderInput
 	float3 posw : WORLD;
 	float3 tangent : TANGENT;
 	float3 binormal : BINORMAL;
+	float3 cameraposw : CAMERA;
 };
 
 // Simple shader to do vertex processing on the GPU.
@@ -57,7 +59,7 @@ PixelShaderInput main(VertexShaderInput input)
 	output.binormal = normalize(output.binormal);
 
 	output.normalmap = input.normalmap.x; 
-
+	output.cameraposw = mul(camerapos, model);
 
 	return output;
 }

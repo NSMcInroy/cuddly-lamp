@@ -113,6 +113,12 @@
     <Image Include="Assets\StoreLogo.png">
       <Filter>Assets</Filter>
     </Image>
+    <Image Include="Assets\WillowTexture.dds">
+      <Filter>Assets</Filter>
+    </Image>
+    <Image Include="Assets\WillowNormal.dds">
+      <Filter>Assets</Filter>
+    </Image>
   </ItemGroup>
   <ItemGroup>
     <AppxManifest Include="Package.appxmanifest" />
@@ -146,5 +152,12 @@
     <Media Include="Assets\cobblestoneTexture.dds" />
     <Media Include="Assets\cobblestoneNormal.dds" />
     <Media Include="Assets\PirateNormal.dds" />
+    <Media Include="Assets\TileNormal.dds" />
+    <Media Include="Assets\TileTexture.dds" />
+  </ItemGroup>
+  <ItemGroup>
+    <Object Include="Assets\WillowTree.obj">
+      <Filter>Assets</Filter>
+    </Object>
   </ItemGroup>
 </Project>
