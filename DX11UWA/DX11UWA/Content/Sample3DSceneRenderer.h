@@ -37,16 +37,16 @@ namespace DX11UWA
 		std::shared_ptr<DX::DeviceResources> m_deviceResources;
 
 		// Direct3D resources for cube geometry.
-		Microsoft::WRL::ComPtr<ID3D11InputLayout>	m_inputLayout;
-		Microsoft::WRL::ComPtr<ID3D11Buffer>		m_vertexBuffer;
-		Microsoft::WRL::ComPtr<ID3D11Buffer>		m_indexBuffer;
-		Microsoft::WRL::ComPtr<ID3D11VertexShader>	m_vertexShader;
-		Microsoft::WRL::ComPtr<ID3D11PixelShader>	m_pixelShader;
-		Microsoft::WRL::ComPtr<ID3D11Buffer>		m_constantBuffer;
+		Microsoft::WRL::ComPtr<ID3D11InputLayout>				m_inputLayout;
+		Microsoft::WRL::ComPtr<ID3D11Buffer>					m_vertexBuffer;
+		Microsoft::WRL::ComPtr<ID3D11Buffer>					m_indexBuffer;
+		Microsoft::WRL::ComPtr<ID3D11VertexShader>				m_vertexShader;
+		Microsoft::WRL::ComPtr<ID3D11PixelShader>				m_pixelShader;
+		Microsoft::WRL::ComPtr<ID3D11Buffer>					m_constantBuffer;
 
-		Microsoft::WRL::ComPtr<ID3D11Buffer>		m_dirConstantBuffer;
-		Microsoft::WRL::ComPtr<ID3D11Buffer>		m_pointConstantBuffer;
-		Microsoft::WRL::ComPtr<ID3D11Buffer>		m_spotConstantBuffer;
+		Microsoft::WRL::ComPtr<ID3D11Buffer>					m_dirConstantBuffer;
+		Microsoft::WRL::ComPtr<ID3D11Buffer>					m_pointConstantBuffer;
+		Microsoft::WRL::ComPtr<ID3D11Buffer>					m_spotConstantBuffer;
 
 		// System resources for cube geometry.
 		ModelViewProjectionConstantBuffer	m_constantBufferData;
@@ -59,6 +59,7 @@ namespace DX11UWA
 		bool	m_loadingComplete;
 		float	m_degreesPerSecond;
 		bool	m_tracking;
+		unsigned int SkyBoxID = 0;
 
 		// Data members for keyboard and mouse input
 		char	m_kbuttons[256];

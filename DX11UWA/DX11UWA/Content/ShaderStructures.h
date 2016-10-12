@@ -29,6 +29,7 @@ namespace DX11UWA
 	struct VERTEX
 	{
 		DirectX::XMFLOAT3 position;
+		DirectX::XMFLOAT2 skybox;
 		DirectX::XMFLOAT2 uv;
 		DirectX::XMFLOAT2 normalmap;
 		DirectX::XMFLOAT3 normals;

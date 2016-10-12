@@ -20,7 +20,6 @@ using namespace DX11UWA;
 
 using namespace DirectX;
 using namespace Windows::Foundation;
-
 // Loads vertex and pixel shaders from files and instantiates the cube geometry.
 Sample3DSceneRenderer::Sample3DSceneRenderer(const std::shared_ptr<DX::DeviceResources>& deviceResources) :
 	m_loadingComplete(false),
@@ -98,7 +97,7 @@ void Sample3DSceneRenderer::Update(DX::StepTimer const& timer)
 	m_pointConstantBufferData.pos.y = m_constantBufferData.model._24;
 	m_pointConstantBufferData.pos.z = m_constantBufferData.model._34;
 
-	
+
 
 }
 
@@ -212,14 +211,17 @@ void Sample3DSceneRenderer::UpdateCamera(DX::StepTimer const& timer, float const
 			m_camera._41 = pos.x;
 			m_camera._42 = pos.y;
 			m_camera._43 = pos.z;
+
 		}
 		m_prevMousePos = m_currMousePos;
 	}
 
 	m_constantBufferData.camerapos = XMFLOAT4(m_camera._41, m_camera._42, m_camera._43, m_camera._44);
-
-	//m_spotConstantBufferData.pos = XMFLOAT4(m_camera._41, m_camera._42, m_camera._43, m_camera._44);
-	//m_spotConstantBufferData.dir = XMFLOAT4(m_camera._31, m_camera._32, m_camera._33, m_camera._34);
+	m_scene.models[SkyBoxID].loationMatrix = XMMatrixTranspose( XMMatrixSet(
+		1.0, 0.0f, 0.0f, 0.0f,
+		0.0f, 1.0, 0.0f,0.0f,
+		0.0f, 0.0f, 1.0f,0.0f,
+		m_camera._41, m_camera._42, m_camera._43, 1.0f));
 }
 
 void Sample3DSceneRenderer::SetKeyboardButtons(const char* list)
@@ -269,6 +271,7 @@ void Sample3DSceneRenderer::Render(void)
 
 	auto context = m_deviceResources->GetD3DDeviceContext();
 
+
 	XMStoreFloat4x4(&m_constantBufferData.view, XMMatrixTranspose(XMMatrixInverse(nullptr, XMLoadFloat4x4(&m_camera))));
 
 
@@ -308,8 +311,15 @@ void Sample3DSceneRenderer::Render(void)
 		context->IASetIndexBuffer(m_scene.models[i].m_indexBuffer.Get(), DXGI_FORMAT_R32_UINT, 0);
 		context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 		context->IASetInputLayout(m_scene.m_inputLayout.Get());
+		if (m_scene.models[i].vertices[0].skybox.x == 1.0f)//is a skybox
+		{
+			context->PSSetShaderResources(2, 1, m_scene.skyboxsrv.GetAddressOf());
+		}
+		else
+		{
 		context->PSSetShaderResources(0, 1, m_scene.models[i].srv.GetAddressOf());
 		context->PSSetShaderResources(1, 1, m_scene.models[i].normalsrv.GetAddressOf());
+		}
 		// Attach our vertex shader.
 		context->VSSetShader(m_scene.m_vertexShader.Get(), nullptr, 0);
 		// Send the constant buffer to the graphics device.
@@ -448,6 +458,7 @@ void Sample3DSceneRenderer::CreateDeviceDependentResources(void)
 		static const D3D11_INPUT_ELEMENT_DESC vertexDesc[] =
 		{
 			{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+			{ "SKYBOX", 0, DXGI_FORMAT_R32G32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
 			{ "UV", 0, DXGI_FORMAT_R32G32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
 			{ "NORMALMAP", 0, DXGI_FORMAT_R32G32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
 			{ "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
@@ -473,7 +484,7 @@ void Sample3DSceneRenderer::CreateDeviceDependentResources(void)
 
 		//m_dirConstantBufferData.color = XMFLOAT4(1, 1, 1, 1);
 		m_dirConstantBufferData.color = XMFLOAT4(0.3f, 0.3f, 0.3f, 1);
-		m_dirConstantBufferData.dir = XMFLOAT4(1, -1, 1, 0);
+		m_dirConstantBufferData.dir = XMFLOAT4(1, -1, 0, 0);
 
 		//point
 		CD3D11_BUFFER_DESC constantPointLightBufferDesc(sizeof(PointConstantBuffer), D3D11_BIND_CONSTANT_BUFFER);
@@ -575,9 +586,48 @@ void Sample3DSceneRenderer::CreateDeviceDependentResources(void)
 		}
 	});
 
+	auto createSkyBoxTask = (createScenePSTask && createSceneVSTask).then([this]()
+	{
+		Model model;
+		if (model.loadOBJ("assets/SkyBox.obj"))
+		{
+			HRESULT hs = m_scene.loadSkyBox(L"assets/SkyboxOcean.dds", m_deviceResources->GetD3DDevice());
+			if (hs != S_OK)
+				m_scene.skyboxsrv = nullptr;
 
+			model.srv = nullptr;
+			model.normalsrv = nullptr;
+			for (unsigned int i = 0; i < model.vertices.size(); ++i)
+			{
+				model.vertices[i].skybox.x = 1.0f;
+				model.vertices[i].normalmap.x = 0.0f;
+			}
+
+			m_scene.models.push_back(model);
+			SkyBoxID = m_scene.models.size() - 1;
+			m_scene.models[m_scene.models.size() - 1].loationMatrix = XMMatrixTranspose(XMMatrixMultiply(XMMatrixRotationY(3.14159f), XMMatrixTranslation(5.0f, 1.0f, 0.0f)));
+
+
+			D3D11_SUBRESOURCE_DATA vertexBufferData = { 0 };
+			vertexBufferData.pSysMem = m_scene.models[m_scene.models.size() - 1].vertices.data();
+			vertexBufferData.SysMemPitch = 0;
+			vertexBufferData.SysMemSlicePitch = 0;
+			CD3D11_BUFFER_DESC vertexBufferDesc(sizeof(VERTEX) * m_scene.models[m_scene.models.size() - 1].vertices.size(), D3D11_BIND_VERTEX_BUFFER);
+			DX::ThrowIfFailed(m_deviceResources->GetD3DDevice()->CreateBuffer(&vertexBufferDesc, &vertexBufferData, &m_scene.models[m_scene.models.size() - 1].m_vertexBuffer));
+
+
+			m_scene.models[m_scene.models.size() - 1].m_indexCount = m_scene.models[m_scene.models.size() - 1].indexVerts.size();
+
+			D3D11_SUBRESOURCE_DATA indexBufferData = { 0 };
+			indexBufferData.pSysMem = m_scene.models[m_scene.models.size() - 1].indexVerts.data();
+			indexBufferData.SysMemPitch = 0;
+			indexBufferData.SysMemSlicePitch = 0;
+			CD3D11_BUFFER_DESC indexBufferDesc(sizeof(unsigned int) * m_scene.models[m_scene.models.size() - 1].indexVerts.size(), D3D11_BIND_INDEX_BUFFER);
+			DX::ThrowIfFailed(m_deviceResources->GetD3DDevice()->CreateBuffer(&indexBufferDesc, &indexBufferData, &m_scene.models[m_scene.models.size() - 1].m_indexBuffer));
+		}
+	});
 	// Once the cube is loaded, the object is ready to be rendered.
-	(createCubeTask && createFloorTask && createTreeTask && createLightsTask).then([this]()
+	(createCubeTask && createFloorTask && createSkyBoxTask && createTreeTask && createLightsTask).then([this]()
 	{
 		m_loadingComplete = true;
 	});

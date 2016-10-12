@@ -11,6 +11,7 @@ cbuffer ModelViewProjectionConstantBuffer : register(b0)
 struct VertexShaderInput
 {
 	float3 pos : POSITION;
+	float2 skybox : SKYBOX;
 	float2 uv : UV;
 	float2 normalmap : NORMALMAP;
 	float3 normals : NORMAL;
@@ -25,6 +26,7 @@ struct PixelShaderInput
 	float3 uv : UV;
 	float normalmap : NORMALMAP;
 	float3 normals : NORMAL;
+	float skybox : SKYBOX;
 	float3 posw : WORLD;
 	float3 tangent : TANGENT;
 	float3 binormal : BINORMAL;
@@ -36,7 +38,6 @@ PixelShaderInput main(VertexShaderInput input)
 {
 	PixelShaderInput output;
 	float4 pos = float4(input.pos, 1.0f);
-
 	// Transform the vertex position into projected space.
 	pos = mul(pos, model);
 	output.posw = pos.xyz;
@@ -47,7 +48,10 @@ PixelShaderInput main(VertexShaderInput input)
 	// Pass the color through without modification.
 	output.uv = float3(input.uv, 1.0f);
 
-	output.normals = mul(input.normals,model);
+	if (input.skybox.x == 1.0f)
+		output.uv = input.pos;
+
+	output.normals = mul(input.normals, model);
 	output.normals = normalize(output.normals);
 
 	// Calculate the tangent vector against the world matrix only and then normalize the final value.
@@ -58,8 +62,9 @@ PixelShaderInput main(VertexShaderInput input)
 	output.binormal = mul(input.binormal, model);
 	output.binormal = normalize(output.binormal);
 
-	output.normalmap = input.normalmap.x; 
-	output.cameraposw = mul(camerapos, model);
+	output.normalmap = input.normalmap.x;
+	output.skybox = input.skybox.x;
+	output.cameraposw = camerapos;
 
 	return output;
 }

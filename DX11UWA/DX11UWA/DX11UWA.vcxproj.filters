@@ -113,10 +113,10 @@
     <Image Include="Assets\StoreLogo.png">
       <Filter>Assets</Filter>
     </Image>
-    <Image Include="Assets\WillowTexture.dds">
+    <Image Include="Assets\SkyBoxCubeMap.dds">
       <Filter>Assets</Filter>
     </Image>
-    <Image Include="Assets\WillowNormal.dds">
+    <Image Include="Assets\SkyboxOcean.dds">
       <Filter>Assets</Filter>
     </Image>
   </ItemGroup>
@@ -129,6 +129,8 @@
     <None Include="Assets\tentacleKnight.obj" />
     <None Include="Assets\pirate.obj" />
     <None Include="Assets\floor plane.obj" />
+    <None Include="Assets\WillowTree.obj" />
+    <None Include="Assets\SkyBox.obj" />
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="Content\SamplePixelShader.hlsl">
@@ -154,10 +156,7 @@
     <Media Include="Assets\PirateNormal.dds" />
     <Media Include="Assets\TileNormal.dds" />
     <Media Include="Assets\TileTexture.dds" />
-  </ItemGroup>
-  <ItemGroup>
-    <Object Include="Assets\WillowTree.obj">
-      <Filter>Assets</Filter>
-    </Object>
+    <Media Include="Assets\WillowNormal.dds" />
+    <Media Include="Assets\WillowTexture.dds" />
   </ItemGroup>
 </Project>
