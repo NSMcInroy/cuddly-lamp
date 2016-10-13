@@ -60,6 +60,9 @@ namespace DX11UWA
 		float	m_degreesPerSecond;
 		bool	m_tracking;
 		unsigned int SkyBoxID = 0;
+		unsigned int BulbID = 0;
+		unsigned int PlanetID = 0;
+		unsigned int LaternID = 0;
 
 		// Data members for keyboard and mouse input
 		char	m_kbuttons[256];

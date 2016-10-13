@@ -1,0 +1,12 @@
+#
+#
+#
+
+newmtl RT_3D_Planet_Model:RT_3D_Planet_Model Mesh_RT_3D_Planet_Model:blinn1SG
+illum 2
+Ka 0.000000 0.000000 0.000000
+Kd 0.000000 0.000000 0.000000
+Ks 0.000000 0.000000 0.000000
+Ns 0.000000
+map_Kd RT_2D_Planet_Diffuse.png
+

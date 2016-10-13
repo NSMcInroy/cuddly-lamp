@@ -70,11 +70,12 @@ float3 ViewVector = normalize(input.posw - input.cameraposw);
 ViewVector = -ViewVector;
 
 //directional light
-float dirlightRatio = dot(-dir_direction.xyz, bumpNormal);
+float3 dir_dir = normalize(dir_direction.xyz);
+float dirlightRatio = dot(-dir_dir, bumpNormal);
 float3 dirColor = dir_color.xyz * dirlightRatio;
 
 //Specular directional
-float3 dirRefelection = normalize(reflect(dir_direction.xyz, bumpNormal));
+float3 dirRefelection = normalize(reflect(dir_dir, bumpNormal));
 float dirRdotV = max(0, dot(dirRefelection, ViewVector));
 float3 dirSpecColor = saturate(dirColor * pow(dirRdotV, 32));
 
@@ -92,8 +93,9 @@ float3 pointSpecColor = saturate(pointColor * pow(pointRdotV, 32));
 
 
 //Spotlight
+float3 coneDir = normalize(spot_conedir.xyz);
 float3 spotlightDir = normalize(spot_pos.xyz - input.posw);
-float surfaceRatio = saturate(dot(-spotlightDir, spot_conedir.xyz));
+float surfaceRatio = saturate(dot(-spotlightDir, coneDir));
 float spotFactor = (surfaceRatio > spot_coneratio.y) ? 1 : 0;
 float spotRange = (spotlightDir < spot_coneratio.z) ? 1 : 0;
 float spotlightRatio = saturate(dot(spotlightDir, bumpNormal));

@@ -92,20 +92,36 @@ void Sample3DSceneRenderer::Update(DX::StepTimer const& timer)
 
 	// Update or move camera here
 	UpdateCamera(timer, 4.0f, 1.75f);
+	XMFLOAT4X4 tmp;
+	XMStoreFloat4x4(&tmp, m_scene.models[BulbID].loationMatrix);
+	m_pointConstantBufferData.pos.x = tmp.m[0][3];
+	m_pointConstantBufferData.pos.y = tmp.m[1][3];
+	m_pointConstantBufferData.pos.z = tmp.m[2][3];
 
-	m_pointConstantBufferData.pos.x = m_constantBufferData.model._14;
-	m_pointConstantBufferData.pos.y = m_constantBufferData.model._24;
-	m_pointConstantBufferData.pos.z = m_constantBufferData.model._34;
 
+	XMStoreFloat4x4(&tmp, m_scene.models[PlanetID].loationMatrix);
 
+	m_dirConstantBufferData.dir.x = -tmp.m[0][3];
+	m_dirConstantBufferData.dir.y = -tmp.m[1][3];
+	m_dirConstantBufferData.dir.z = -tmp.m[2][3];
 
+	XMStoreFloat4x4(&tmp, m_scene.models[LaternID].loationMatrix);
+	m_spotConstantBufferData.pos.x = tmp.m[0][3];
+	m_spotConstantBufferData.pos.y = tmp.m[1][3];
+	m_spotConstantBufferData.pos.z = tmp.m[2][3];
+	m_spotConstantBufferData.dir.x = -tmp.m[0][3];
+	m_spotConstantBufferData.dir.y = -tmp.m[1][3];
+	m_spotConstantBufferData.dir.z = -tmp.m[2][3];
 }
 
 // Rotate the 3D cube model a set amount of radians.
 void Sample3DSceneRenderer::Rotate(float radians)
 {
 	// Prepare to pass the updated model matrix to the shader
-	XMStoreFloat4x4(&m_constantBufferData.model, XMMatrixTranspose(XMMatrixMultiply(XMMatrixTranslation(0, 1, 5), XMMatrixRotationY(radians))));
+	XMStoreFloat4x4(&m_constantBufferData.model, XMMatrixTranspose(XMMatrixMultiply(XMMatrixTranslation(0, 3, 5), XMMatrixRotationY(radians))));
+	m_scene.models[BulbID].loationMatrix = XMMatrixTranspose(XMMatrixMultiply(XMMatrixTranslation(0, 1, -5), XMMatrixRotationY(radians)));
+	m_scene.models[PlanetID].loationMatrix = XMMatrixTranspose(XMMatrixMultiply(XMMatrixTranslation(0, 15, 0), XMMatrixRotationZ(radians)));
+	m_scene.models[LaternID].loationMatrix = XMMatrixTranspose(XMMatrixMultiply(XMMatrixTranslation(0, 2, 7), XMMatrixRotationY(-radians)));
 
 
 }
@@ -217,10 +233,10 @@ void Sample3DSceneRenderer::UpdateCamera(DX::StepTimer const& timer, float const
 	}
 
 	m_constantBufferData.camerapos = XMFLOAT4(m_camera._41, m_camera._42, m_camera._43, m_camera._44);
-	m_scene.models[SkyBoxID].loationMatrix = XMMatrixTranspose( XMMatrixSet(
+	m_scene.models[SkyBoxID].loationMatrix = XMMatrixTranspose(XMMatrixSet(
 		1.0, 0.0f, 0.0f, 0.0f,
-		0.0f, 1.0, 0.0f,0.0f,
-		0.0f, 0.0f, 1.0f,0.0f,
+		0.0f, 1.0, 0.0f, 0.0f,
+		0.0f, 0.0f, 1.0f, 0.0f,
 		m_camera._41, m_camera._42, m_camera._43, 1.0f));
 }
 
@@ -317,8 +333,8 @@ void Sample3DSceneRenderer::Render(void)
 		}
 		else
 		{
-		context->PSSetShaderResources(0, 1, m_scene.models[i].srv.GetAddressOf());
-		context->PSSetShaderResources(1, 1, m_scene.models[i].normalsrv.GetAddressOf());
+			context->PSSetShaderResources(0, 1, m_scene.models[i].srv.GetAddressOf());
+			context->PSSetShaderResources(1, 1, m_scene.models[i].normalsrv.GetAddressOf());
 		}
 		// Attach our vertex shader.
 		context->VSSetShader(m_scene.m_vertexShader.Get(), nullptr, 0);
@@ -499,7 +515,7 @@ void Sample3DSceneRenderer::CreateDeviceDependentResources(void)
 		DX::ThrowIfFailed(m_deviceResources->GetD3DDevice()->CreateBuffer(&constantSpotLightBufferDesc, nullptr, &m_spotConstantBuffer));
 
 
-		m_spotConstantBufferData.color = XMFLOAT4(0.05, 0.05, 1, 1);
+		m_spotConstantBufferData.color = XMFLOAT4(1, 0.05, 0.05, 1);
 		m_spotConstantBufferData.pos = XMFLOAT4(0, 3, 0, 1);
 		m_spotConstantBufferData.dir = XMFLOAT4(0, -1, 0, 0);
 		m_spotConstantBufferData.coneratio = XMFLOAT4(0.8, 0.7, 10, 1);
@@ -586,6 +602,119 @@ void Sample3DSceneRenderer::CreateDeviceDependentResources(void)
 		}
 	});
 
+	auto createBulbTask = (createScenePSTask && createSceneVSTask).then([this]()
+	{
+		Model model;
+		if (model.loadOBJ("assets/bulb.obj"))
+		{
+			HRESULT hs = model.loadTexture(L"assets/bulbon.dds", m_deviceResources->GetD3DDevice());
+			if (hs != S_OK)
+				model.srv = nullptr;
+
+
+			model.normalsrv = nullptr;
+
+
+			m_scene.models.push_back(model);
+			BulbID = m_scene.models.size() - 1;
+			m_scene.models[m_scene.models.size() - 1].loationMatrix = XMMatrixTranspose(XMMatrixMultiply(XMMatrixRotationY(3.14159f), XMMatrixTranslation(0.0f, 1.0f, 1.0f)));
+
+
+			D3D11_SUBRESOURCE_DATA vertexBufferData = { 0 };
+			vertexBufferData.pSysMem = m_scene.models[m_scene.models.size() - 1].vertices.data();
+			vertexBufferData.SysMemPitch = 0;
+			vertexBufferData.SysMemSlicePitch = 0;
+			CD3D11_BUFFER_DESC vertexBufferDesc(sizeof(VERTEX) * m_scene.models[m_scene.models.size() - 1].vertices.size(), D3D11_BIND_VERTEX_BUFFER);
+			DX::ThrowIfFailed(m_deviceResources->GetD3DDevice()->CreateBuffer(&vertexBufferDesc, &vertexBufferData, &m_scene.models[m_scene.models.size() - 1].m_vertexBuffer));
+
+
+			m_scene.models[m_scene.models.size() - 1].m_indexCount = m_scene.models[m_scene.models.size() - 1].indexVerts.size();
+
+			D3D11_SUBRESOURCE_DATA indexBufferData = { 0 };
+			indexBufferData.pSysMem = m_scene.models[m_scene.models.size() - 1].indexVerts.data();
+			indexBufferData.SysMemPitch = 0;
+			indexBufferData.SysMemSlicePitch = 0;
+			CD3D11_BUFFER_DESC indexBufferDesc(sizeof(unsigned int) * m_scene.models[m_scene.models.size() - 1].indexVerts.size(), D3D11_BIND_INDEX_BUFFER);
+			DX::ThrowIfFailed(m_deviceResources->GetD3DDevice()->CreateBuffer(&indexBufferDesc, &indexBufferData, &m_scene.models[m_scene.models.size() - 1].m_indexBuffer));
+		}
+	});
+	auto createPlanetTask = (createScenePSTask && createSceneVSTask).then([this]()
+	{
+		Model model;
+		if (model.loadOBJ("assets/planet.obj"))
+		{
+			HRESULT hs = model.loadTexture(L"assets/PlanetTexture.dds", m_deviceResources->GetD3DDevice());
+			if (hs != S_OK)
+				model.srv = nullptr;
+
+
+			hs = model.loadNormal(L"assets/PlanetNormal.dds", m_deviceResources->GetD3DDevice());
+			if (hs != S_OK)
+				model.normalsrv = nullptr;
+			else
+				for (unsigned int i = 0; i < model.vertices.size(); ++i)
+					model.vertices[i].normalmap.x = 1.0f;
+
+
+
+			m_scene.models.push_back(model);
+			PlanetID = m_scene.models.size() - 1;
+			m_scene.models[m_scene.models.size() - 1].loationMatrix = XMMatrixTranspose(XMMatrixMultiply(XMMatrixRotationY(3.14159f), XMMatrixTranslation(0.0f, 1.0f, 1.0f)));
+
+
+			D3D11_SUBRESOURCE_DATA vertexBufferData = { 0 };
+			vertexBufferData.pSysMem = m_scene.models[m_scene.models.size() - 1].vertices.data();
+			vertexBufferData.SysMemPitch = 0;
+			vertexBufferData.SysMemSlicePitch = 0;
+			CD3D11_BUFFER_DESC vertexBufferDesc(sizeof(VERTEX) * m_scene.models[m_scene.models.size() - 1].vertices.size(), D3D11_BIND_VERTEX_BUFFER);
+			DX::ThrowIfFailed(m_deviceResources->GetD3DDevice()->CreateBuffer(&vertexBufferDesc, &vertexBufferData, &m_scene.models[m_scene.models.size() - 1].m_vertexBuffer));
+
+
+			m_scene.models[m_scene.models.size() - 1].m_indexCount = m_scene.models[m_scene.models.size() - 1].indexVerts.size();
+
+			D3D11_SUBRESOURCE_DATA indexBufferData = { 0 };
+			indexBufferData.pSysMem = m_scene.models[m_scene.models.size() - 1].indexVerts.data();
+			indexBufferData.SysMemPitch = 0;
+			indexBufferData.SysMemSlicePitch = 0;
+			CD3D11_BUFFER_DESC indexBufferDesc(sizeof(unsigned int) * m_scene.models[m_scene.models.size() - 1].indexVerts.size(), D3D11_BIND_INDEX_BUFFER);
+			DX::ThrowIfFailed(m_deviceResources->GetD3DDevice()->CreateBuffer(&indexBufferDesc, &indexBufferData, &m_scene.models[m_scene.models.size() - 1].m_indexBuffer));
+		}
+	});
+
+	auto createLaternTask = (createScenePSTask && createSceneVSTask).then([this]()
+	{
+		Model model;
+		if (model.loadOBJ("assets/latern.obj"))
+		{
+			HRESULT hs = model.loadTexture(L"assets/LaternTexture.dds", m_deviceResources->GetD3DDevice());
+			if (hs != S_OK)
+				model.srv = nullptr;
+
+			model.normalsrv = nullptr;
+
+			m_scene.models.push_back(model);
+			LaternID = m_scene.models.size() - 1;
+			m_scene.models[m_scene.models.size() - 1].loationMatrix = XMMatrixTranspose(XMMatrixMultiply(XMMatrixRotationY(3.14159f), XMMatrixTranslation(5.0f, 1.0f, 1.0f)));
+
+
+			D3D11_SUBRESOURCE_DATA vertexBufferData = { 0 };
+			vertexBufferData.pSysMem = m_scene.models[m_scene.models.size() - 1].vertices.data();
+			vertexBufferData.SysMemPitch = 0;
+			vertexBufferData.SysMemSlicePitch = 0;
+			CD3D11_BUFFER_DESC vertexBufferDesc(sizeof(VERTEX) * m_scene.models[m_scene.models.size() - 1].vertices.size(), D3D11_BIND_VERTEX_BUFFER);
+			DX::ThrowIfFailed(m_deviceResources->GetD3DDevice()->CreateBuffer(&vertexBufferDesc, &vertexBufferData, &m_scene.models[m_scene.models.size() - 1].m_vertexBuffer));
+
+
+			m_scene.models[m_scene.models.size() - 1].m_indexCount = m_scene.models[m_scene.models.size() - 1].indexVerts.size();
+
+			D3D11_SUBRESOURCE_DATA indexBufferData = { 0 };
+			indexBufferData.pSysMem = m_scene.models[m_scene.models.size() - 1].indexVerts.data();
+			indexBufferData.SysMemPitch = 0;
+			indexBufferData.SysMemSlicePitch = 0;
+			CD3D11_BUFFER_DESC indexBufferDesc(sizeof(unsigned int) * m_scene.models[m_scene.models.size() - 1].indexVerts.size(), D3D11_BIND_INDEX_BUFFER);
+			DX::ThrowIfFailed(m_deviceResources->GetD3DDevice()->CreateBuffer(&indexBufferDesc, &indexBufferData, &m_scene.models[m_scene.models.size() - 1].m_indexBuffer));
+		}
+	});
 	auto createSkyBoxTask = (createScenePSTask && createSceneVSTask).then([this]()
 	{
 		Model model;
@@ -626,8 +755,10 @@ void Sample3DSceneRenderer::CreateDeviceDependentResources(void)
 			DX::ThrowIfFailed(m_deviceResources->GetD3DDevice()->CreateBuffer(&indexBufferDesc, &indexBufferData, &m_scene.models[m_scene.models.size() - 1].m_indexBuffer));
 		}
 	});
+
+
 	// Once the cube is loaded, the object is ready to be rendered.
-	(createCubeTask && createFloorTask && createSkyBoxTask && createTreeTask && createLightsTask).then([this]()
+	(createCubeTask && createFloorTask && createLaternTask && createBulbTask &&  createPlanetTask && createSkyBoxTask && createTreeTask && createLightsTask).then([this]()
 	{
 		m_loadingComplete = true;
 	});

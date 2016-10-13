@@ -113,10 +113,16 @@
     <Image Include="Assets\StoreLogo.png">
       <Filter>Assets</Filter>
     </Image>
-    <Image Include="Assets\SkyBoxCubeMap.dds">
+    <Image Include="Assets\bulbon.dds">
       <Filter>Assets</Filter>
     </Image>
-    <Image Include="Assets\SkyboxOcean.dds">
+    <Image Include="Assets\PlanetTexture.dds">
+      <Filter>Assets</Filter>
+    </Image>
+    <Image Include="Assets\PlanetNormal.dds">
+      <Filter>Assets</Filter>
+    </Image>
+    <Image Include="Assets\LaternTexture.dds">
       <Filter>Assets</Filter>
     </Image>
   </ItemGroup>
@@ -158,5 +164,18 @@
     <Media Include="Assets\TileTexture.dds" />
     <Media Include="Assets\WillowNormal.dds" />
     <Media Include="Assets\WillowTexture.dds" />
+    <Media Include="Assets\SkyBoxCubeMap.dds" />
+    <Media Include="Assets\SkyboxOcean.dds" />
+  </ItemGroup>
+  <ItemGroup>
+    <Object Include="Assets\bulb.obj">
+      <Filter>Assets</Filter>
+    </Object>
+    <Object Include="Assets\planet.obj">
+      <Filter>Assets</Filter>
+    </Object>
+    <Object Include="Assets\latern.obj">
+      <Filter>Assets</Filter>
+    </Object>
   </ItemGroup>
 </Project>
