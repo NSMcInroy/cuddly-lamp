@@ -32,6 +32,7 @@ Sample3DSceneRenderer::Sample3DSceneRenderer(const std::shared_ptr<DX::DeviceRes
 	m_currMousePos = nullptr;
 	m_prevMousePos = nullptr;
 	memset(&m_camera, 0, sizeof(XMFLOAT4X4));
+	memset(&m_camera1, 0, sizeof(XMFLOAT4X4));
 
 	CreateDeviceDependentResources();
 	CreateWindowSizeDependentResources();
@@ -41,7 +42,7 @@ Sample3DSceneRenderer::Sample3DSceneRenderer(const std::shared_ptr<DX::DeviceRes
 void Sample3DSceneRenderer::CreateWindowSizeDependentResources(void)
 {
 	Size outputSize = m_deviceResources->GetOutputSize();
-	float aspectRatio = outputSize.Width / outputSize.Height;
+	float aspectRatio = outputSize.Width / (outputSize.Height *0.5f);
 	float fovAngleY = 70.0f * XM_PI / 180.0f;
 
 	// This is a simple example of change that can be made when the app is in
@@ -71,7 +72,12 @@ void Sample3DSceneRenderer::CreateWindowSizeDependentResources(void)
 	static const XMVECTORF32 at = { 0.0f, -0.1f, 0.0f, 0.0f };
 	static const XMVECTORF32 up = { 0.0f, 1.0f, 0.0f, 0.0f };
 
+	static const XMVECTORF32 eye1 = { 0.0f, 6.5f, -10.0f, 0.0f };
+	static const XMVECTORF32 at1 = { 0.0f, 0.0f, 0.0f, 0.0f };
+	static const XMVECTORF32 up1 = { 0.0f, 10.0f, 0.0f, 0.0f };
+
 	XMStoreFloat4x4(&m_camera, XMMatrixInverse(nullptr, XMMatrixLookAtLH(eye, at, up)));
+	XMStoreFloat4x4(&m_camera1, XMMatrixInverse(nullptr, XMMatrixLookAtLH(eye1, at1, up1)));
 	XMStoreFloat4x4(&m_constantBufferData.view, XMMatrixTranspose(XMMatrixLookAtLH(eye, at, up)));
 }
 
@@ -130,6 +136,7 @@ void Sample3DSceneRenderer::UpdateCamera(DX::StepTimer const& timer, float const
 {
 	const float delta_time = (float)timer.GetElapsedSeconds();
 
+	//top camera
 	if (m_kbuttons['W'])
 	{
 		XMMATRIX translation = XMMatrixTranslation(0.0f, 0.0f, moveSpd * delta_time);
@@ -173,30 +180,41 @@ void Sample3DSceneRenderer::UpdateCamera(DX::StepTimer const& timer, float const
 		XMStoreFloat4x4(&m_camera, result);
 	}
 
+
+
+
+	//second camera
 	if (m_kbuttons[VK_UP])
 	{
-		m_pointConstantBufferData.pos.z += 1 * delta_time;
-		//DBOUT("\nz: " << m_pointConstantBufferData.pos.z);
+		XMMATRIX translation = XMMatrixTranslation(0.0f, 0.0f, moveSpd * delta_time);
+		XMMATRIX temp_camera = XMLoadFloat4x4(&m_camera1);
+		XMMATRIX result = XMMatrixMultiply(translation, temp_camera);
+		XMStoreFloat4x4(&m_camera1, result);
 	}
 	if (m_kbuttons[VK_DOWN])
 	{
-		m_pointConstantBufferData.pos.z -= 1 * delta_time;
-		//DBOUT("\nz: " << m_pointConstantBufferData.pos.z);
+		XMMATRIX translation = XMMatrixTranslation(0.0f, 0.0f, -moveSpd * delta_time);
+		XMMATRIX temp_camera = XMLoadFloat4x4(&m_camera1);
+		XMMATRIX result = XMMatrixMultiply(translation, temp_camera);
+		XMStoreFloat4x4(&m_camera1, result);
 
 
 	}
 	if (m_kbuttons[VK_RIGHT])
 	{
-		m_pointConstantBufferData.pos.x += 1 * delta_time;
-		//DBOUT("\nx: " << m_pointConstantBufferData.pos.x);
+		XMMATRIX translation = XMMatrixTranslation(moveSpd * delta_time, 0.0f, 0.0f);
+		XMMATRIX temp_camera = XMLoadFloat4x4(&m_camera1);
+		XMMATRIX result = XMMatrixMultiply(translation, temp_camera);
+		XMStoreFloat4x4(&m_camera1, result);
 
 
 	}
 	if (m_kbuttons[VK_LEFT])
 	{
-		m_pointConstantBufferData.pos.x -= 1 * delta_time;
-		m_pointConstantBufferData.pos.x = m_constantBufferData.model._41;
-		//DBOUT("\nx: " << m_pointConstantBufferData.pos.x);
+		XMMATRIX translation = XMMatrixTranslation(-moveSpd * delta_time, 0.0f, 0.0f);
+		XMMATRIX temp_camera = XMLoadFloat4x4(&m_camera1);
+		XMMATRIX result = XMMatrixMultiply(translation, temp_camera);
+		XMStoreFloat4x4(&m_camera1, result);
 
 	}
 
@@ -275,21 +293,9 @@ void Sample3DSceneRenderer::StopTracking(void)
 {
 	m_tracking = false;
 }
-
-// Renders one frame using the vertex and pixel shaders.
-void Sample3DSceneRenderer::Render(void)
+void Sample3DSceneRenderer::Draw(void)
 {
-	// Loading is asynchronous. Only draw geometry after it's loaded.
-	if (!m_loadingComplete)
-	{
-		return;
-	}
-
 	auto context = m_deviceResources->GetD3DDeviceContext();
-
-
-	XMStoreFloat4x4(&m_constantBufferData.view, XMMatrixTranspose(XMMatrixInverse(nullptr, XMLoadFloat4x4(&m_camera))));
-
 
 	// Prepare the constant buffer to send it to the graphics device.
 	context->UpdateSubresource1(m_constantBuffer.Get(), 0, NULL, &m_constantBufferData, 0, 0, 0);
@@ -330,6 +336,7 @@ void Sample3DSceneRenderer::Render(void)
 		if (m_scene.models[i].vertices[0].skybox.x == 1.0f)//is a skybox
 		{
 			context->PSSetShaderResources(2, 1, m_scene.skyboxsrv.GetAddressOf());
+
 		}
 		else
 		{
@@ -362,9 +369,35 @@ void Sample3DSceneRenderer::Render(void)
 		// Draw the objects.
 		context->DrawIndexed(m_scene.models[i].m_indexCount, 0, 0);
 	}
+}
+// Renders one frame using the vertex and pixel shaders.
+void Sample3DSceneRenderer::Render(void)
+{
+	// Loading is asynchronous. Only draw geometry after it's loaded.
+	if (!m_loadingComplete)
+	{
+		return;
+	}
+	auto context = m_deviceResources->GetD3DDeviceContext();
 
 
 
+	//Draw First Screen
+	XMStoreFloat4x4(&m_constantBufferData.view, XMMatrixTranspose(XMMatrixInverse(nullptr, XMLoadFloat4x4(&m_camera))));
+	context->RSSetViewports(1, &m_deviceResources->GetScreenViewport1());
+	Draw();
+	
+	//move second screen skybox
+	m_scene.models[SkyBoxID].loationMatrix = XMMatrixTranspose(XMMatrixSet(
+		1.0, 0.0f, 0.0f, 0.0f,
+		0.0f, 1.0, 0.0f, 0.0f,
+		0.0f, 0.0f, 1.0f, 0.0f,
+		m_camera1._41, m_camera1._42, m_camera1._43, 1.0f));
+
+	//Draw second screen
+	XMStoreFloat4x4(&m_constantBufferData.view, XMMatrixTranspose(XMMatrixInverse(nullptr, XMLoadFloat4x4(&m_camera1))));
+	context->RSSetViewports(1, &m_deviceResources->GetScreenViewport());
+	Draw();
 
 
 }
