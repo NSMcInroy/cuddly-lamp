@@ -381,12 +381,22 @@ void Sample3DSceneRenderer::Render(void)
 	auto context = m_deviceResources->GetD3DDeviceContext();
 
 
+	context->OMSetRenderTargets(1, m_scene.renderTargetViewMap.GetAddressOf(), m_scene.depthStencil.Get());
+	context->ClearDepthStencilView(m_scene.depthStencil.Get(), D3D11_CLEAR_DEPTH, 1, NULL);
+	//Draw first screen on texture
+	XMStoreFloat4x4(&m_constantBufferData.view, XMMatrixTranspose(XMMatrixInverse(nullptr, XMLoadFloat4x4(&m_camera))));
+	context->RSSetViewports(1, &m_deviceResources->GetScreenViewport1());
+	Draw();
+
+
+	ID3D11RenderTargetView *const targets[1] = { m_deviceResources->GetBackBufferRenderTargetView() };
+	context->OMSetRenderTargets(1, targets, m_deviceResources->GetDepthStencilView());
 
 	//Draw First Screen
 	XMStoreFloat4x4(&m_constantBufferData.view, XMMatrixTranspose(XMMatrixInverse(nullptr, XMLoadFloat4x4(&m_camera))));
 	context->RSSetViewports(1, &m_deviceResources->GetScreenViewport1());
 	Draw();
-	
+
 	//move second screen skybox
 	m_scene.models[SkyBoxID].loationMatrix = XMMatrixTranspose(XMMatrixSet(
 		1.0, 0.0f, 0.0f, 0.0f,
@@ -603,7 +613,6 @@ void Sample3DSceneRenderer::CreateDeviceDependentResources(void)
 			HRESULT hs = model.loadTexture(L"assets/TileTexture.dds", m_deviceResources->GetD3DDevice());
 			if (hs != S_OK)
 				model.srv = nullptr;
-
 			hs = model.loadNormal(L"assets/TileNormal.dds", m_deviceResources->GetD3DDevice());
 			if (hs != S_OK)
 				model.normalsrv = nullptr;
@@ -613,6 +622,7 @@ void Sample3DSceneRenderer::CreateDeviceDependentResources(void)
 
 
 			m_scene.models.push_back(model);
+			RTTID = m_scene.models.size() - 1;
 			m_scene.models[m_scene.models.size() - 1].loationMatrix = XMMatrixTranspose(XMMatrixMultiply(XMMatrixTranslation(0.0f, 0.0f, 0.0f), XMMatrixRotationY(3.14159f)));
 
 
@@ -634,7 +644,44 @@ void Sample3DSceneRenderer::CreateDeviceDependentResources(void)
 			DX::ThrowIfFailed(m_deviceResources->GetD3DDevice()->CreateBuffer(&indexBufferDesc, &indexBufferData, &m_scene.models[m_scene.models.size() - 1].m_indexBuffer));
 		}
 	});
+	auto createWallTask = (createScenePSTask && createSceneVSTask).then([this]()
+	{
+		Model model;
+		if (model.loadOBJ("assets/floor plane.obj"))
+		{
 
+			model.srv = m_scene.shaderResourceViewMap;
+
+			model.normalsrv = nullptr;
+
+			for (unsigned int i = 0; i < model.vertices.size(); ++i)
+			{
+				model.vertices[i].skybox.y = 1.0f;
+			}
+
+			m_scene.models.push_back(model);
+			RTTID = m_scene.models.size() - 1;
+			m_scene.models[m_scene.models.size() - 1].loationMatrix = XMMatrixTranspose(XMMatrixMultiply(XMMatrixRotationX(-1.5708f),  XMMatrixTranslation(0.0f, 10.0f, 13.0f)));
+
+
+			D3D11_SUBRESOURCE_DATA vertexBufferData = { 0 };
+			vertexBufferData.pSysMem = m_scene.models[m_scene.models.size() - 1].vertices.data();
+			vertexBufferData.SysMemPitch = 0;
+			vertexBufferData.SysMemSlicePitch = 0;
+			CD3D11_BUFFER_DESC vertexBufferDesc(sizeof(VERTEX) * m_scene.models[m_scene.models.size() - 1].vertices.size(), D3D11_BIND_VERTEX_BUFFER);
+			DX::ThrowIfFailed(m_deviceResources->GetD3DDevice()->CreateBuffer(&vertexBufferDesc, &vertexBufferData, &m_scene.models[m_scene.models.size() - 1].m_vertexBuffer));
+
+
+			m_scene.models[m_scene.models.size() - 1].m_indexCount = m_scene.models[m_scene.models.size() - 1].indexVerts.size();
+
+			D3D11_SUBRESOURCE_DATA indexBufferData = { 0 };
+			indexBufferData.pSysMem = m_scene.models[m_scene.models.size() - 1].indexVerts.data();
+			indexBufferData.SysMemPitch = 0;
+			indexBufferData.SysMemSlicePitch = 0;
+			CD3D11_BUFFER_DESC indexBufferDesc(sizeof(unsigned int) * m_scene.models[m_scene.models.size() - 1].indexVerts.size(), D3D11_BIND_INDEX_BUFFER);
+			DX::ThrowIfFailed(m_deviceResources->GetD3DDevice()->CreateBuffer(&indexBufferDesc, &indexBufferData, &m_scene.models[m_scene.models.size() - 1].m_indexBuffer));
+		}
+	});
 	auto createBulbTask = (createScenePSTask && createSceneVSTask).then([this]()
 	{
 		Model model;
@@ -748,6 +795,83 @@ void Sample3DSceneRenderer::CreateDeviceDependentResources(void)
 			DX::ThrowIfFailed(m_deviceResources->GetD3DDevice()->CreateBuffer(&indexBufferDesc, &indexBufferData, &m_scene.models[m_scene.models.size() - 1].m_indexBuffer));
 		}
 	});
+
+	auto createRTTTask = (createScenePSTask && createSceneVSTask).then([this]()
+	{
+		D3D11_TEXTURE2D_DESC textureDesc;
+		D3D11_RENDER_TARGET_VIEW_DESC renderTargetViewDesc;
+		D3D11_SHADER_RESOURCE_VIEW_DESC shaderResourceViewDesc;
+
+		///////////////////////// Map's Texture
+		// Initialize the  texture description.
+		ZeroMemory(&textureDesc, sizeof(textureDesc));
+
+		// Setup the texture description.
+		// We will have our map be a square
+		// We will need to have this texture bound as a render target AND a shader resource
+		textureDesc.Width = m_deviceResources->GetOutputSize().Width;
+		textureDesc.Height = m_deviceResources->GetOutputSize().Height / 2;
+		textureDesc.MipLevels = 1;
+		textureDesc.ArraySize = 1;
+		textureDesc.Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
+		textureDesc.SampleDesc.Count = 1;
+		textureDesc.Usage = D3D11_USAGE_DEFAULT;
+		textureDesc.BindFlags = D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE;
+		textureDesc.CPUAccessFlags = 0;
+		textureDesc.MiscFlags = 0;
+
+		// Create the texture
+		m_deviceResources->GetD3DDevice()->CreateTexture2D(&textureDesc, NULL, &m_scene.renderTargetTextureMap);
+
+
+		/////////////////////// Map's Render Target
+		// Setup the description of the render target view.
+		renderTargetViewDesc.Format = textureDesc.Format;
+		renderTargetViewDesc.ViewDimension = D3D11_RTV_DIMENSION_TEXTURE2D;
+		renderTargetViewDesc.Texture2D.MipSlice = 0;
+
+		// Create the render target view.
+		m_deviceResources->GetD3DDevice()->CreateRenderTargetView(m_scene.renderTargetTextureMap.Get(), &renderTargetViewDesc, &m_scene.renderTargetViewMap);
+
+
+		/////////////////////// Map's Shader Resource View
+		// Setup the description of the shader resource view.
+		shaderResourceViewDesc.Format = textureDesc.Format;
+		shaderResourceViewDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
+		shaderResourceViewDesc.Texture2D.MostDetailedMip = 0;
+		shaderResourceViewDesc.Texture2D.MipLevels = 1;
+
+		// Create the shader resource view.
+		m_deviceResources->GetD3DDevice()->CreateShaderResourceView(m_scene.renderTargetTextureMap.Get(), &shaderResourceViewDesc, &m_scene.shaderResourceViewMap);
+
+
+		// Create a depth stencil view for use with 3D rendering if needed.
+		CD3D11_TEXTURE2D_DESC depthStencilDesc(
+			DXGI_FORMAT_D24_UNORM_S8_UINT,
+			lround(m_deviceResources->GetOutputSize().Width),
+			lround(m_deviceResources->GetOutputSize().Height / 2),
+			1, // This depth stencil view has only one texture.
+			1, // Use a single mipmap level.
+			D3D11_BIND_DEPTH_STENCIL
+		);
+
+		DX::ThrowIfFailed(
+			m_deviceResources->GetD3DDevice()->CreateTexture2D(
+				&depthStencilDesc,
+				nullptr,
+				&m_scene.depthTargetTextureMap
+			)
+		);
+
+		CD3D11_DEPTH_STENCIL_VIEW_DESC depthStencilViewDesc(D3D11_DSV_DIMENSION_TEXTURE2D);
+		DX::ThrowIfFailed(
+			m_deviceResources->GetD3DDevice()->CreateDepthStencilView(
+				m_scene.depthTargetTextureMap.Get(),
+				&depthStencilViewDesc,
+				&m_scene.depthStencil
+			)
+		);
+	});
 	auto createSkyBoxTask = (createScenePSTask && createSceneVSTask).then([this]()
 	{
 		Model model;
@@ -791,7 +915,7 @@ void Sample3DSceneRenderer::CreateDeviceDependentResources(void)
 
 
 	// Once the cube is loaded, the object is ready to be rendered.
-	(createCubeTask && createFloorTask && createLaternTask && createBulbTask &&  createPlanetTask && createSkyBoxTask && createTreeTask && createLightsTask).then([this]()
+	(createCubeTask && createFloorTask && createRTTTask && createLaternTask && createBulbTask &&  createPlanetTask && createSkyBoxTask && createTreeTask && createLightsTask).then([this]()
 	{
 		m_loadingComplete = true;
 	});

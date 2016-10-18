@@ -36,7 +36,7 @@ struct PixelShaderInput
 	float3 uv : UV;
 	float normalmap : NORMALMAP;
 	float3 normals : NORMAL;
-	float skybox : SKYBOX;
+	float2 skybox : SKYBOX;
 	float3 posw : WORLD;
 	float3 tangent : TANGENT;
 	float3 binormal : BINORMAL;
@@ -47,9 +47,15 @@ struct PixelShaderInput
 float4 main(PixelShaderInput input) : SV_TARGET
 {
 float4 finalColor;
-if (input.skybox == 1.0f)
+if (input.skybox.x == 1.0f)
 {
 	finalColor = skyboxTexture.Sample(filters[0], input.uv);
+	return finalColor;
+}
+if (input.skybox.y == 1.0f)
+{
+	finalColor = baseTexture.Sample(filters[0], input.uv);
+	finalColor = (finalColor.r + finalColor.g + finalColor.b) / 3;
 	return finalColor;
 }
 finalColor = baseTexture.Sample(filters[0], input.uv); // get base color

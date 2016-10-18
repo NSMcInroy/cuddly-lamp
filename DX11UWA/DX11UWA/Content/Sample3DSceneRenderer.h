@@ -62,6 +62,7 @@ namespace DX11UWA
 		bool	m_tracking;
 		unsigned int SkyBoxID = 0;
 		unsigned int BulbID = 0;
+		unsigned int RTTID = 0;
 		unsigned int PlanetID = 0;
 		unsigned int LaternID = 0;
 

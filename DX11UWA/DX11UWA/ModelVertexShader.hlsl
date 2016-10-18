@@ -26,7 +26,7 @@ struct PixelShaderInput
 	float3 uv : UV;
 	float normalmap : NORMALMAP;
 	float3 normals : NORMAL;
-	float skybox : SKYBOX;
+	float2 skybox : SKYBOX;
 	float3 posw : WORLD;
 	float3 tangent : TANGENT;
 	float3 binormal : BINORMAL;
@@ -63,7 +63,7 @@ PixelShaderInput main(VertexShaderInput input)
 	output.binormal = normalize(output.binormal);
 
 	output.normalmap = input.normalmap.x;
-	output.skybox = input.skybox.x;
+	output.skybox = input.skybox;
 	output.cameraposw = camerapos;
 
 	return output;
